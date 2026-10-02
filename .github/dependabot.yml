@@ -1,0 +1,33 @@
+# Version updates for Actions pins and OpenTofu providers.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+    groups:
+      minor-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+    open-pull-requests-limit: 10
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+    groups:
+      minor-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+    open-pull-requests-limit: 10

@@ -1,0 +1,12 @@
+# Local OpenTofu state and secrets — never commit.
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+crash.log
+override.tf
+*_override.tf
+tfplan
+tfplan.txt
+tfplan.log
