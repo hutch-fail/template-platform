@@ -1,0 +1,16 @@
+# Local secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Local editor / agent adapters
+.cursor/
+.agents/
+
+# OpenTofu local bootstrap / working state
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/tfplan
+terraform/tfplan.txt
+terraform/tfplan.log

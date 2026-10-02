@@ -1,0 +1,39 @@
+# Thin caller — implementation in hutch-fail/platform-ci @ pinned tag.
+# `environment` is set inside the reusable workflow (illegal on `uses:` jobs).
+# Pin SHA = v0.7.1
+name: iac-plan
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - "scripts/**"
+      - "Makefile"
+      - ".github/workflows/iac-plan.yml"
+      - ".github/workflows/iac-apply.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: template-platform-production-plan-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    uses: hutch-fail/platform-ci/.github/workflows/iac-plan.yml@81e8e236434c37793117b0a2ff9679a3298a4bad
+    with:
+      tf_backend_key: template/terraform.tfstate
+      plan_artifact_name: tfplan-${{ github.event.pull_request.number }}
+      deployment_environment: production
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_BACKEND_ENDPOINT: ${{ secrets.TF_BACKEND_ENDPOINT }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+      OP_SERVICE_ACCOUNT_KEY: ${{ secrets.OP_SERVICE_ACCOUNT_KEY }}
+      ORG_BILLING_TOKEN: ${{ secrets.ORG_BILLING_TOKEN }}
