@@ -1,0 +1,22 @@
+# Pin only — suite owned by hutch-fail/pre-commit (id: platform).
+default_install_hook_types: [pre-commit, pre-push]
+repos:
+  - repo: https://github.com/hutch-fail/pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: platform
+
+  - repo: local
+    hooks:
+      - id: evals-pre-commit
+        name: evals — apply scoped bars for changed paths
+        entry: bash evals/scripts/pre-commit-evals.sh
+        language: system
+        pass_filenames: true
+      - id: evals-pre-push
+        name: evals — CI-mode pack gate before push
+        entry: bash evals/scripts/pre-push-evals.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
