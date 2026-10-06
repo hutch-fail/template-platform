@@ -1,0 +1,39 @@
+# Thin caller — implementation lives in hutch-fail/evals (reusable workflow).
+# Prefer this over separate eval-pack.yml + eval-select.yml. Pin hub_ref to the
+# same commit/tag as uses: @pin.
+#
+# Pass OP_SERVICE_ACCOUNT_TOKEN so the reusable can load App credentials from
+# 1Password (item hutch-fail-platform-github) and clone private hutch-fail/evals.
+# Use secrets: inherit if that org/repo secret already exists, or map explicitly.
+# Optional TYPESAFE_API_KEY (ui:jev + meta Tier2). Optional EVAL_LLM_* for meta Tier3.
+name: eval ci
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-ci-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval-ci:
+    # Skip drafts (CI starts on ready_for_review) and Dependabot.
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.user.login != 'renovate[bot]'
+    # PIN: replace both @PIN and hub_ref with the same hutch-fail/evals commit or tag
+    uses: hutch-fail/evals/.github/workflows/eval-ci.yml@PIN
+    with:
+      evals_path: evals
+      hub_ref: PIN
+    secrets:
+      OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      EVAL_LLM_API_KEY: ${{ secrets.EVAL_LLM_API_KEY }}
+      EVAL_LLM_BASE_URL: ${{ secrets.EVAL_LLM_BASE_URL }}
+      EVAL_LLM_MODEL: ${{ secrets.EVAL_LLM_MODEL }}

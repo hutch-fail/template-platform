@@ -1,0 +1,11 @@
+--- a/terraform/backend.tf
++++ b/terraform/backend.tf
+@@ -1,6 +1,4 @@
+-# Baseline: local backend (must fail the remote-backend language bar).
++# Fixed: remote S3-compatible backend (partial config OK).
+ terraform {
+-  backend "local" {
+-    path = "terraform.tfstate"
+-  }
++  backend "s3" {}
+ }

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared env for template-platform OpenTofu scripts.
 set -euo pipefail
+GITHUB_OWNER=hutch-fail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 export PLATFORM_TEMPLATE_ROOT="${PLATFORM_TEMPLATE_ROOT:-${ROOT}}"

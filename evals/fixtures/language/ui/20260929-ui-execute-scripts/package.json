@@ -1,0 +1,9 @@
+{
+  "name": "ui-execute-scripts-fixture",
+  "private": true,
+  "scripts": {
+    "ui:docs": "node -e \"process.exit(0)\"",
+    "ui:lint": "node -e \"process.exit(1)\"",
+    "ui:process": "node -e \"process.exit(0)\""
+  }
+}

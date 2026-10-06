@@ -1,0 +1,9 @@
+---
+# Baseline converge entrypoint (must remain after golden).
+- name: Fixture converge
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Noop
+      ansible.builtin.debug:
+        msg: converge

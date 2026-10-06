@@ -1,0 +1,11 @@
+--- a/.github/workflows/sample.yml
++++ b/.github/workflows/sample.yml
+@@ -5,7 +5,7 @@ jobs:
+   determine-runner:
+     runs-on: ubuntu-latest
+     concurrency:
+-      group: runner-determination
++      group: runner-determination-${{ github.workflow }}-${{ github.job }}
+       cancel-in-progress: false
+     steps:
+       - run: echo hi

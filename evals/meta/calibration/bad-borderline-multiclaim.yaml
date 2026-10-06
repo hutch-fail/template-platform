@@ -1,0 +1,27 @@
+# Calibration fixture: multi-claim criterion → definition FAIL, B skipped.
+
+id: url-and-polite-and-complete
+description: >
+  Bundles three independent claims (intentionally bad meta candidate).
+criterion: >
+  PASS if the response contains an HTTPS URL AND is polite AND fully answers
+  every part of the user's question. FAIL if any of those fail.
+inputs:
+  response:
+    type: string
+    description: Model response being evaluated
+  user_question:
+    type: string
+    description: Original user question
+result:
+  type: boolean
+expected:
+  definition:
+    decidable: true
+    executable: true
+    single_claim: false
+    binary_outcome: true
+    pass: false
+  discrimination:
+    status: skipped
+  pass: false

@@ -1,0 +1,3 @@
+# Local deps for harness/lib/typesafe_reply_judge.py (evals/harness/.venv).
+typesafe-sdk>=0.7.0,<1
+python-dotenv>=1.0.0,<2

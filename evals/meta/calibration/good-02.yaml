@@ -1,0 +1,32 @@
+# Calibration fixture: another sound single-claim criterion → overall PASS.
+
+id: status-code-is-ok
+description: >
+  Verify that an HTTP status code is in the 2xx success range.
+criterion: >
+  PASS if `status_code` is an integer between 200 and 299 inclusive.
+  FAIL otherwise.
+inputs:
+  status_code:
+    type: integer
+    description: HTTP status code from the response under test
+result:
+  type: boolean
+discrimination:
+  positive:
+    status_code: 204
+  negative:
+    status_code: 503
+expected:
+  definition:
+    decidable: true
+    executable: true
+    single_claim: true
+    binary_outcome: true
+    pass: true
+  discrimination:
+    status: ran
+    positive_result: true
+    negative_result: false
+    pass: true
+  pass: true

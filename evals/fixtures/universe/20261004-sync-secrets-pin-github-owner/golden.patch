@@ -1,0 +1,11 @@
+--- a/scripts/lib/env.sh
++++ b/scripts/lib/env.sh
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env bash
+-# Baseline: inherit GITHUB_OWNER (must fail the universe bar).
++# Fixed: hard-pin owner so parent-shell GITHUB_OWNER cannot retarget gh secret set.
+ set -euo pipefail
+-: "${GITHUB_OWNER:=hutch-fail}"
++GITHUB_OWNER="coachmind-ca"
+ : "${GITHUB_REPO:=platform-cloudflare}"
+ export GITHUB_OWNER GITHUB_REPO

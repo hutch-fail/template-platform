@@ -1,0 +1,32 @@
+# Calibration fixture: sound criterion + correct known cases → overall PASS.
+
+id: response-has-https-url
+description: >
+  Verify that a response includes at least one HTTPS URL.
+criterion: >
+  PASS if the response contains at least one syntactically valid HTTPS URL
+  (scheme https:// followed by a host). FAIL otherwise.
+inputs:
+  response:
+    type: string
+    description: Model response being evaluated
+result:
+  type: boolean
+discrimination:
+  positive:
+    response: "See the docs at https://example.com/docs for details."
+  negative:
+    response: "Docs are on our website."
+expected:
+  definition:
+    decidable: true
+    executable: true
+    single_claim: true
+    binary_outcome: true
+    pass: true
+  discrimination:
+    status: ran
+    positive_result: true
+    negative_result: false
+    pass: true
+  pass: true

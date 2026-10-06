@@ -1,0 +1,12 @@
+--- a/ansible/playbooks/feature.yml
++++ b/ansible/playbooks/feature.yml
+@@ -1,9 +0,0 @@
+----
+-# Baseline: extra sibling playbook (must fail the single-converge language bar).
+-- name: fixture feature playbook
+-  hosts: localhost
+-  gather_facts: false
+-  tasks:
+-    - name: noop
+-      ansible.builtin.debug:
+-        msg: feature

@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/env.sh
 source "${SCRIPT_DIR}/lib/env.sh"
 
-: "${GITHUB_OWNER:=hutch-fail}"
+GITHUB_OWNER=hutch-fail
 : "${GITHUB_REPO:=template-platform}"
 : "${GITHUB_SECRETS_ENV:=production}"
 REPO="${GITHUB_OWNER}/${GITHUB_REPO}"

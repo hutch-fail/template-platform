@@ -1,0 +1,63 @@
+---
+description: >-
+  Behavior changes to this hub go through skills → goals/evals → develop →
+  judges. Implementation alone is not the change.
+alwaysApply: true
+---
+
+# Meta-dev loop
+
+When the task is **meta development**—improving or evaluating coding agents,
+the harness, goals, judges, or “prove tool X helps”—do **not** freestyle.
+
+This hub is the recipe for goal methodology (templates, processes, scripts,
+skills). Durable product claims belong in the **target repository’s** tracked
+`evals/` with dated paths
+`goals/github.com/<slug>/<repo>/YYYYMMDD-<kebab>.md`. WIP uses `scope: active`
+on a feature branch in that same evals git tree. Agents in a product workspace:
+`evals/PROCESS.md`. See `README.md`.
+
+## What counts as meta
+
+- `goals/**`, `fixtures/**`, `harness/**`, `skills/**`, goal/judge/meta skills, this rule
+- Agent-improvement experiments (Graft, prompt packs, context tools, etc.)
+- Authoring F2P/P2P goals or proving a claim with evidence
+
+## What does **not** count
+
+Pure docs typos with no behavior change. A pull request that changes harness,
+skills, or methodology is eval work — do not skip the pack.
+
+## Required loop
+
+1. **goal-author** — write goals + fixtures under product/hub `evals/`;
+   `make eval/assert-red` until certified red
+2. **goal-develop** or **goal-solve** — implement in scope, or (`solver: agent`) `make eval/solve`; never weaken evals
+3. **goal-judge** — `make eval/verify` / `solve` / `run` / `report`; fail closed on red manifests
+
+Prefer the orchestrator skill **meta-dev** for end-to-end meta work.
+
+Low-level CLI shim: skill **goal** (`make eval/...`). Docs: `README.md`.
+
+The pre-run report is the goal file. Example: `goals/github.com/hermes/hermes/20260918-graft-mini-svc-ab.md`. Show that file. Do not recap it. A fixture with `check.sh` needs that goal (`fixture_dir`; local pre-commit `eval-has-goal`). After the run, write `<goal>-result.md` beside the goal. Example: `goals/github.com/hermes/hermes/20260918-graft-mini-svc-ab-result.md`. A green check with no result file beside the goal is not done (`.cursor/rules/goal-spec.mdc`). Commit the result in a later local commit, not with the goal or the fixture (local pre-commit `result-not-with-eval`). Both commits may be in one pull request. Squash or merge may combine them. Those two hooks are not a pull-request or merge check. If the claim is that an agent used a tool, the check starts that agent in the runtime under test. A config file, a throwaway projector run, or a library script is not that agent.
+
+When a goal already covers the area, run it (`make eval/verify` or
+`make eval/assert-red`). Do not invent a side check as the only proof.
+Research happens in **goal-author** before the goal file is written. The goal
+file is the pre-run description, not a chat recap.
+
+A behavior-changing diff needs a fixture (`check.sh` or `p2p-smoke.sh`), a goal
+markdown, and, before merge, a sibling `<goal>-result.md`. Local pre-commit
+`pr-has-eval-pack` requires the fixture and the goal already on the branch. It
+does not require the result in that commit. The pull-request job
+`.github/workflows/eval-pack.yml` requires all three. `tests/unit/` and `runs/`
+are not that pack. `eval-has-goal` and `result-not-with-eval` stay local commit
+checks.
+
+## Forbidden
+
+- Ad-hoc meta changes without a certified-red goal
+- Doing only the implementation that turns checks green
+- Deleting, skipping, xfailing, or rewriting checks to force green
+- Installing or defaulting agent-improvement tools without a green goal verdict
+- Shipping a durable product bar only as uncommitted local scratch

@@ -1,0 +1,27 @@
+# DEPRECATED — prefer templates/github-workflows/eval-ci.yml (select+pack one job).
+# Thin caller — implementation lives in hutch-fail/evals (reusable workflow).
+# Discovery only — does not verify selected goals. Pin hub_ref to the same @pin.
+# Pass OP_SERVICE_ACCOUNT_TOKEN for 1Password → App credentials → private hub checkout.
+name: eval select
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-select-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval-select:
+    # Dependabot version bumps do not need eval CI.
+    if: github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.user.login != 'renovate[bot]'
+    # PIN: replace both @PIN and hub_ref with the same hutch-fail/evals commit or tag
+    uses: hutch-fail/evals/.github/workflows/eval-select.yml@PIN
+    with:
+      evals_path: evals
+      hub_ref: PIN
+    secrets:
+      OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

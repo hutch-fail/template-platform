@@ -1,0 +1,24 @@
+---
+description: The pre-run report is the goal file. The result file sits beside it. Do not recap either.
+alwaysApply: true
+---
+
+# Pre-run report
+
+The pre-run report is the goal file. The example is `evals/goals/github.com/hermes/hermes/20260918-graft-mini-svc-ab.md`.
+
+When asked to see it, open the goal markdown file. Do not paste a substitute into chat.
+
+Write new goals in that shape. Copy `evals/templates/goal.md`. Put `Set before the run.` above the Acceptance gates table.
+
+Prefer meaningful User outcome bullets map to Success criteria or Limitations (see PROCESS “Outcome vs check”). Do not over-correct: aspirational prose is fine when the gap is named.
+
+# Result file
+
+After the run, write `<goal>-result.md` beside the goal. The example is `evals/goals/github.com/hermes/hermes/20260918-graft-mini-svc-ab-result.md`. Copy `evals/templates/result.md`. When asked to see the result, open that file. Do not recap it.
+
+A green check with no result file beside the goal is not done. The copy under `evals/runs/` is not that file. Commit the result in a later local commit. Do not stage it with the goal or with files under that goal's `fixture_dir`. Local pre-commit `result-not-with-eval` rejects that mix. Both commits may be in one pull request. Squash or merge may combine them. A fixture with `check.sh` needs a goal whose `fixture_dir` is that directory. Local pre-commit `eval-has-goal` rejects a fixture with no such goal. These hooks are not a pull-request or merge check. `*-result.md` is not a goal.
+
+# Who acted
+
+If the claim is that an agent used a tool, the check starts that agent in the runtime under test and reads what it did. Name each agent. A config file, a projector writing into a throwaway directory, or a library script is not that agent. One agent does not stand in for the others.

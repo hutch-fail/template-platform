@@ -1,0 +1,9 @@
+--- a/sut.sh
++++ b/sut.sh
+@@ -1,4 +1,4 @@
+ #!/usr/bin/env bash
+-# Broken SUT for TB1: must not emit FIXTURE_OK until golden.patch is applied.
++# Fixed SUT for TB1 golden path.
+ set -euo pipefail
+-printf 'WRONG_TOKEN\n'
++printf 'FIXTURE_OK\n'

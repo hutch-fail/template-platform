@@ -1,0 +1,21 @@
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+new file mode 100644
+--- /dev/null
++++ b/.pre-commit-config.yaml
+@@ -0,0 +1,16 @@
++# Pin only — suite owned by hutch-fail/pre-commit (id: platform).
++# Exclude vendored evals subtree.
++repos:
++  - repo: https://github.com/hutch-fail/pre-commit
++    rev: v0.3.0
++    hooks:
++      - id: platform
++        exclude: ^evals/
++
++  - repo: local
++    hooks:
++      - id: evals-pre-commit
++        name: evals — apply scoped bars for changed paths
++        entry: bash evals/scripts/pre-commit-evals.sh
++        language: system
++        pass_filenames: true
