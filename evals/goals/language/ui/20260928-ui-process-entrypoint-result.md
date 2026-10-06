@@ -36,3 +36,7 @@ contract only); Meter CI still runs the npm gate.
 # Next action
 
 Promote further shared UI rules into `language/ui/` only when org-wide.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

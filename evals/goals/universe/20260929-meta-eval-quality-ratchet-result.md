@@ -64,3 +64,7 @@ on keys in CI.
 Land goal+fixture first; commit this result in a later local commit. Pass
 `TYPESAFE_API_KEY` and `EVAL_LLM_*` + `EVAL_LLM_MODEL` into eval-ci when Tier2/3
 should run fail-closed in CI.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

@@ -40,3 +40,7 @@ Does not prove other consumers, live guest converge, or a mandatory select gate.
 
 Ship hub PR (goal+fixture, then result in a later commit). Consumer declare
 lands with machine-layers. Redistribute / sync/pull is a later explicit ask.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

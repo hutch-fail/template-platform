@@ -59,3 +59,7 @@ Merge this PR; consumers `sync/pull` + re-run
 # Manifest
 
 `evals/runs/20261001-live-verify-org-rule/` (`verdict=pass` on verify).
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

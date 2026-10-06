@@ -13,3 +13,7 @@ red (missing `.pre-commit-config.yaml`). `make eval/verify` green after
 `.pre-commit-config.yaml` pins `hutch-fail/pre-commit` `id: platform` and
 `scripts/pre-commit-evals.sh`; `make eval/bars` exits 0. Unit coverage in
 `tests/unit/test_eval_bars.sh` for missing vs golden shape.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

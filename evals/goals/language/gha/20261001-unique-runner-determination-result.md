@@ -11,3 +11,7 @@ status: pass
 - `detect_families .github/workflows/x.yml` selects `gha`; `HERMES_EVAL_FORCE_FAMILIES=ci` selects `gha`.
 
 Deterministic language/gha seed bar wired in `run_gha_bars`.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

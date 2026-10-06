@@ -62,3 +62,7 @@ Fleet consumers must backfill root `.pre-commit-config.yaml` after kit sync.
 
 Redistribute kit; backfill `evals-pre-push` on consumers (starting with
 service-meter); open hub PR.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

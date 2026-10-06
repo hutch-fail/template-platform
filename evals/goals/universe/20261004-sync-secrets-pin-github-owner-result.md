@@ -39,3 +39,7 @@ Does not inspect live GitHub secrets.
 # Next action
 
 Redistribute the hub kit; pin `GITHUB_OWNER` on every consumer with `scripts/sync-secrets.sh`.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

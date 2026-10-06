@@ -40,3 +40,7 @@ Does not migrate other consumers or enable a required select gate.
 
 Ship hub + platform-github PRs; close #9. Remaining open issue on the hub is #2
 (Make/doctor/secrets) if still desired.
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

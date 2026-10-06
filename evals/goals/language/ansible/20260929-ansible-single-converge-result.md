@@ -40,3 +40,7 @@ Empty zero-byte siblings after Apple `patch` are ignored by design.
 # Next action
 
 Ship hub PR (goal+fixture first; this result in a later local commit).
+
+# Manual verification
+
+None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.
