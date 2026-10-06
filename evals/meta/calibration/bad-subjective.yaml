@@ -1,0 +1,24 @@
+# Calibration fixture: subjective criterion → definition FAIL, B skipped.
+
+id: response-looks-good
+description: >
+  Subjective quality judgment (intentionally bad meta candidate).
+criterion: >
+  PASS if the response is high quality. FAIL if the response is low quality.
+inputs:
+  response:
+    type: string
+    description: Model response being evaluated
+result:
+  type: boolean
+expected:
+  definition:
+    decidable: false
+    # "high quality" needs an unstated quality standard → not executable from response alone
+    executable: false
+    single_claim: true
+    binary_outcome: false
+    pass: false
+  discrimination:
+    status: skipped
+  pass: false

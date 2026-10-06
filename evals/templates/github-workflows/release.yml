@@ -1,0 +1,23 @@
+# Thin caller — implementation lives in hutch-fail/actions (reusable workflow).
+# Do not copy semantic-release.yml here. Pin uses: @ to an actions commit or tag.
+# Publishes GitHub Releases from conventional commits. No in-repo CHANGELOG.md.
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # PIN: replace @PIN with a hutch-fail/actions commit or tag
+    uses: hutch-fail/actions/.github/workflows/semantic-release.yml@PIN

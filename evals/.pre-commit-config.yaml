@@ -1,0 +1,50 @@
+# https://pre-commit.com
+# Hub dogfood: org platform suite + evals-pre-commit/pre-push, plus authorship-only hooks.
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: https://github.com/hutch-fail/pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: platform
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: evals-pre-commit
+        name: evals — apply scoped bars for changed paths
+        entry: bash scripts/pre-commit-evals.sh
+        language: system
+        pass_filenames: true
+      - id: evals-pre-push
+        name: evals — CI-mode pack gate before push
+        entry: bash scripts/pre-push-evals.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: eval-has-goal
+        name: eval fixtures require a goal markdown
+        entry: bash tests/unit/assert_eval_has_goal.sh
+        language: system
+        pass_filenames: false
+        files: ^(fixtures|goals)/
+      - id: result-not-with-eval
+        name: result markdown is not in the same local commit as its goal or fixture
+        entry: bash tests/unit/assert_result_commit.sh
+        language: system
+        pass_filenames: false
+        files: ^(fixtures|goals)/
+      - id: pr-has-eval-pack
+        name: behavior changes include an eval fixture and a pre-run goal
+        entry: bash tests/unit/assert_pr_has_eval_pack.sh
+        language: system
+        pass_filenames: false
+        files: ^(?!fixtures/|goals/|runs/|templates/)

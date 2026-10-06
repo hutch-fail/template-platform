@@ -1,0 +1,5 @@
+schema: evals-scope/v1
+repo: github.com/hutch-fail/template-platform
+languages: []
+opt_out: []
+attachment: kit

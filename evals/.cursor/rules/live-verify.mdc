@@ -1,0 +1,33 @@
+---
+description: >-
+  Claims of works/done require real-system evidence; ask before disruptive
+  live checks when the stack may be in use.
+alwaysApply: true
+---
+
+# Live verify — real evidence
+
+When the user asks to **test**, **verify**, **validate**, or when you are about
+to claim a change **works** / **done**:
+
+## Do
+
+- Exercise the **real** system with the **smallest proportionate** probe that
+  can falsify the claim (`curl` / equivalent against the live URL, API, or UI
+  signal). Assert the expected response.
+- Report concrete evidence (status code, JSON fields, asset markers)—not
+  “looks correct.”
+- **Ask before** a live check that may disrupt shared or long-lived state
+  (restart, rebuild, remount, recreate, full stack bring-up) when that stack
+  may be in use. Prefer a non-disruptive probe when it still grades the claim.
+- If the user declines the live check, **state what remains unverified** and do
+  not soft-claim done.
+
+## Do not
+
+- Treat green CI, typecheck, or reading the diff as verification of runtime
+  behavior.
+- Stop at “should work once applied,” “once you refresh,” or similar hedges
+  when you can run a proportionate check now (or after an approved ask).
+- Put product-specific stack paths, mount maps, or host tooling recipes in this
+  org rule—those belong in the product’s `AGENTS.md` / scripts.

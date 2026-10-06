@@ -1,0 +1,33 @@
+# Malformed discrimination fixtures (both negatives) so B must FAIL.
+# Criterion itself is sound — catches a broken discrimination checker.
+
+id: url-present-but-bad-fixtures
+description: >
+  Sound URL presence criterion with intentionally wrong known cases.
+criterion: >
+  PASS if the response contains at least one syntactically valid HTTPS URL.
+  FAIL otherwise.
+inputs:
+  response:
+    type: string
+    description: Model response being evaluated
+result:
+  type: boolean
+discrimination:
+  positive:
+    response: "There is no URL here."
+  negative:
+    response: "Also no URL."
+expected:
+  definition:
+    decidable: true
+    executable: true
+    single_claim: true
+    binary_outcome: true
+    pass: true
+  discrimination:
+    status: ran
+    positive_result: false
+    negative_result: false
+    pass: false
+  pass: false

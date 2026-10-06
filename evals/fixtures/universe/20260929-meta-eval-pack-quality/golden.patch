@@ -1,0 +1,70 @@
+--- a/goals/demo/thin-pack.md
++++ b/goals/demo/thin-pack.md
+@@ -1,23 +1,60 @@
+ ---
+ schema: goal/v1
+-id: 20260929-demo-thin-pack
+-title: thin baseline pack
+-fixture_dir: goals/demo
+-f2p_check: missing-check.sh
++id: 20260929-demo-good-pack
++title: Demo good pack after pack-quality fix
++fixture_dir: .
++f2p_check: check.sh
+ solver: none
+ pack_quality: required
+ ---
+
++# Executive overview
++
++This demo pack is the golden shape for the universe pack-quality ratchet.
++It shows executive prose, holdout discipline, and program grading so Tier1
++accepts the fixture after patch.
++
+ # Decision
+
+-todo
++A pass lets us say the fixture scan root carries a well-formed goal pack.
++A pass does not prove Tier2/Tier3 live calls without API keys.
+
+ # User outcome
+
+-todo
++Developers see a concrete fixed pack beside the intentionally thin baseline.
++Reviewers can diff the golden against the broken stub in one glance.
+
++# Scope
++
++| Covered | Not covered |
++| --- | --- |
++| Fixture demo pack | Live LiteLLM judgments without keys |
++
+ # Success criteria
+
+ | Criterion | What we look at |
+ | --- | --- |
+-| broken | n/a |
++| Pack lint passes | pack_quality_lint.py on this file |
++
++# Dataset
++
++One demo pack under the fixture. The thin baseline is the train failure case;
++this golden file is the hold-out success case for F2P.
++
++# Grading
++
++| Criterion | Who grades it | Why |
++| --- | --- | --- |
++| Pack lint passes | program (check.sh / pack_quality_lint.py) | Structural |
++
++# Acceptance gates
++
++Set before the run.
++
++| Question | Pass | Fail |
++| --- | --- | --- |
++| Did golden restore pack quality? | F2P red then green | Still thin |
++
++# Limitations
++
++Does not call TypeSafe or LiteLLM when keys are absent (fixture skip).

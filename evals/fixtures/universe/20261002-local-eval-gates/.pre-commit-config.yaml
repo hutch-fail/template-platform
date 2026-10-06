@@ -1,0 +1,16 @@
+# Baseline: org platform + evals-pre-commit present; pre-push local gate missing.
+default_install_hook_types: [pre-commit]
+repos:
+  - repo: https://github.com/hutch-fail/pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: platform
+        exclude: ^evals/
+
+  - repo: local
+    hooks:
+      - id: evals-pre-commit
+        name: evals — apply scoped bars for changed paths
+        entry: bash evals/scripts/pre-commit-evals.sh
+        language: system
+        pass_filenames: true

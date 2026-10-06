@@ -1,0 +1,13 @@
+# Copy to the host repo root when you prefer Make over reusable workflow_call.
+# Pin nothing — runs against the vendored evals/ subtree in this checkout.
+name: evals select (make)
+
+on:
+  pull_request:
+
+jobs:
+  eval-select:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -C evals eval/select

@@ -1,0 +1,11 @@
+--- a/package.json
++++ b/package.json
+@@ -2,7 +2,7 @@
+   "name": "typescript-execute-scripts-fixture",
+   "private": true,
+   "scripts": {
+-    "typecheck": "node -e \"process.exit(1)\"",
++    "typecheck": "node -e \"process.exit(0)\"",
+     "test": "node -e \"process.exit(0)\""
+   }
+ }
