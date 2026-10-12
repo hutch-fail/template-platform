@@ -1,0 +1,758 @@
+#!/usr/bin/env python3
+"""Repo-scoped OptMem wrapper. Does not modify upstream memo.
+
+PRs write timestamp-branch shards. Default-branch reconcile replays logs into
+.optmem/main/memory via unmodified memo note/nap.
+"""
+from __future__ import annotations
+
+import datetime
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+LOG_REC = 320
+SHARD_RE = re.compile(
+    r"^[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9._-]+(?:-[0-9]+)?$"
+)
+NAP_RUN_RE = re.compile(r'nap (\d+-\d+) "')
+PINNED_SHA_RE = re.compile(r"^memo_sha256:\s*([0-9a-f]{64})\s*$", re.M)
+
+
+def die(msg: str, code: int = 1) -> None:
+    print(msg, file=sys.stderr)
+    raise SystemExit(code)
+
+
+def pretty(p: Path) -> str:
+    return str(p)
+
+
+def git_root(start: Path | None = None) -> Path:
+    here = (start or Path.cwd()).resolve()
+    for p in [here, *here.parents]:
+        if (p / ".git").exists():
+            return p
+    die("not inside a git repository; OptMem store is git-root .optmem/")
+
+
+def kit_root(groot: Path) -> Path:
+    env = os.environ.get("HERMES_EVAL_KIT") or os.environ.get("EVALS_KIT") or ""
+    if env:
+        k = Path(env).resolve()
+        if (k / "optmem" / "upstream" / "memo").is_file():
+            return k
+    for cand in (groot, groot / "evals"):
+        if (cand / "optmem" / "upstream" / "memo").is_file():
+            return cand.resolve()
+    die("cannot find optmem/upstream/memo (set HERMES_EVAL_KIT)")
+
+
+def memo_bin(kit: Path) -> Path:
+    p = kit / "optmem" / "upstream" / "memo"
+    if not p.is_file():
+        die("missing %s" % p)
+    return p
+
+
+def pinned_sha256(kit: Path) -> str:
+    text = (kit / "optmem" / "PINNED").read_text(encoding="utf-8")
+    m = PINNED_SHA_RE.search(text)
+    if not m:
+        die("optmem/PINNED missing memo_sha256")
+    return m.group(1)
+
+
+def file_sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    h.update(path.read_bytes())
+    return h.hexdigest()
+
+
+def optmem_dir(groot: Path) -> Path:
+    return groot / ".optmem"
+
+
+def main_memory(groot: Path) -> Path:
+    return optmem_dir(groot) / "main" / "memory"
+
+
+def shards_dir(groot: Path) -> Path:
+    return optmem_dir(groot) / "shards"
+
+
+def write_shard_file(groot: Path) -> Path:
+    return optmem_dir(groot) / ".write-shard"
+
+
+def nested_evals_store(groot: Path) -> bool:
+    """True when a product git root also has a nested evals kit *and* a store under it."""
+    nested = groot / "evals"
+    if not (nested / "harness" / "goal.sh").is_file():
+        return False
+    return (nested / ".optmem").is_dir()
+
+
+def sanitize_branch(name: str) -> str:
+    s = re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip("-")
+    s = re.sub(r"-{2,}", "-", s)
+    if not s:
+        s = "unknown"
+    return s[:80]
+
+
+def current_branch(groot: Path) -> str:
+    r = subprocess.run(
+        ["git", "-C", str(groot), "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    name = (r.stdout or "").strip()
+    if not name or name == "HEAD":
+        sha = subprocess.run(
+            ["git", "-C", str(groot), "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return "detached-" + ((sha.stdout or "unknown").strip() or "unknown")
+    return name
+
+
+def new_shard_id(groot: Path, now: datetime.datetime | None = None) -> str:
+    ts = (now or datetime.datetime.now(datetime.timezone.utc)).strftime(
+        "%Y%m%dT%H%M%SZ"
+    )
+    base = "%s-%s" % (ts, sanitize_branch(current_branch(groot)))
+    name = base
+    n = 2
+    while (shards_dir(groot) / name).exists():
+        name = "%s-%d" % (base, n)
+        n += 1
+        if n > 99:
+            die("too many shard collisions for %s" % base)
+    if not SHARD_RE.match(name):
+        die("internal: bad shard id %s" % name)
+    return name
+
+
+def run_memo(kit: Path, memory: Path, args: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["MEMORY_DIR"] = str(memory)
+    cmd = [sys.executable, str(memo_bin(kit)), *args]
+    r = subprocess.run(
+        cmd,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if check and r.returncode != 0:
+        sys.stderr.write(r.stderr or r.stdout)
+        raise SystemExit(r.returncode)
+    return r
+
+
+def print_proc(r: subprocess.CompletedProcess[str]) -> int:
+    if r.stdout:
+        sys.stdout.write(r.stdout)
+        if not r.stdout.endswith("\n"):
+            sys.stdout.write("\n")
+    if r.stderr:
+        sys.stderr.write(r.stderr)
+    return r.returncode
+
+
+def ensure_gitignore(groot: Path) -> None:
+    gi = optmem_dir(groot) / ".gitignore"
+    want = "**/.lock\n.write-shard\n"
+    if gi.is_file() and gi.read_text(encoding="utf-8") == want:
+        return
+    gi.parent.mkdir(parents=True, exist_ok=True)
+    gi.write_text(want, encoding="utf-8")
+
+
+def cmd_init(groot: Path, kit: Path) -> int:
+    if nested_evals_store(groot):
+        die("refusing store under nested evals/ (sync/pull --delete would wipe it)")
+    ensure_gitignore(groot)
+    shards_dir(groot).mkdir(parents=True, exist_ok=True)
+    (shards_dir(groot) / ".gitkeep").write_text("", encoding="utf-8")
+    mem = main_memory(groot)
+    mem.mkdir(parents=True, exist_ok=True)
+    r = run_memo(kit, mem, ["init"])
+    print("Initialized repo OptMem at %s" % pretty(optmem_dir(groot)))
+    print("Tool: %s" % pretty(Path(__file__).resolve()))
+    print("Upstream memo: %s" % pretty(memo_bin(kit)))
+    return print_proc(r)
+
+
+def session_shard(groot: Path, kit: Path) -> Path:
+    ensure_gitignore(groot)
+    marker = write_shard_file(groot)
+    if marker.is_file():
+        sid = marker.read_text(encoding="utf-8").strip()
+        d = shards_dir(groot) / sid / "memory"
+        if sid and SHARD_RE.match(sid) and d.is_dir():
+            return d
+    sid = new_shard_id(groot)
+    d = shards_dir(groot) / sid / "memory"
+    d.mkdir(parents=True, exist_ok=True)
+    run_memo(kit, d, ["init"])
+    marker.write_text(sid + "\n", encoding="utf-8")
+    return d
+
+
+def write_memory(groot: Path, kit: Path) -> Path:
+    if os.environ.get("OPTMEM_RECONCILE") == "1":
+        return main_memory(groot)
+    return session_shard(groot, kit)
+
+
+def list_shards(groot: Path) -> list[Path]:
+    root = shards_dir(groot)
+    if not root.is_dir():
+        return []
+    out = []
+    for p in sorted(root.iterdir()):
+        if p.name.startswith("."):
+            continue
+        if not SHARD_RE.match(p.name):
+            continue
+        if (p / "memory" / "LOG.txt").is_file() or (p / "memory").is_dir():
+            out.append(p)
+    return out
+
+
+def log_texts(memory: Path) -> list[str]:
+    log = memory / "LOG.txt"
+    if not log.is_file():
+        return []
+    buf = log.read_bytes()
+    n = len(buf) // LOG_REC
+    texts = []
+    for i in range(n):
+        rec = buf[i * LOG_REC : (i + 1) * LOG_REC].decode("utf-8", "replace").rstrip()
+        head, _, rest = rec.partition(" ")
+        _date, _, text = rest.partition(" ")
+        if text.strip():
+            texts.append(text.strip())
+    return texts
+
+
+def resolve_llm_env() -> tuple[str, str, str] | None:
+    """Return (key, base, model) or None if model/key unset."""
+    key = (
+        os.environ.get("EVAL_LLM_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+        or ""
+    ).strip()
+    model = (os.environ.get("EVAL_LLM_MODEL") or "").strip()
+    if not key or not model:
+        return None
+    base = (
+        os.environ.get("EVAL_LLM_BASE_URL")
+        or os.environ.get("OPENAI_API_BASE")
+        or os.environ.get("OPENAI_BASE_URL")
+        or "https://api.openai.com/v1"
+    ).rstrip("/")
+    return key, base, model
+
+
+def chat_completions(
+    key: str,
+    base: str,
+    model: str,
+    messages: list[dict],
+    *,
+    temperature: float = 0,
+    max_tokens: int | None = None,
+    timeout: int = 60,
+) -> tuple[int, str, dict | None]:
+    """POST /chat/completions. Returns (http_status, raw_head, parsed_json_or_None).
+
+    Never logs the API key. Rejects Cloudflare Access HTML / non-JSON as parsed=None.
+    """
+    payload: dict = {
+        "model": model,
+        "temperature": temperature,
+        "messages": messages,
+    }
+    if max_tokens is not None:
+        payload["max_tokens"] = max_tokens
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        base + "/chat/completions",
+        data=body,
+        headers={
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8", "replace")
+            status = int(resp.status)
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", "replace")
+        status = int(e.code)
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        return 0, str(e), None
+
+    stripped = raw.lstrip().lower()
+    if (
+        stripped.startswith("<!doctype")
+        or stripped.startswith("<html")
+        or "cloudflare access" in stripped
+    ):
+        return status, raw[:200], None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return status, raw[:200], None
+    if not isinstance(data, dict):
+        return status, raw[:200], None
+    return status, raw, data
+
+
+def llm_host(base: str) -> str:
+    rest = base.split("://", 1)[-1]
+    return rest.split("/", 1)[0]
+
+
+def probe_llm() -> int:
+    """Fail-closed chat/completions probe for make optmem/doctor. Exit 0/1."""
+    resolved = resolve_llm_env()
+    if not resolved:
+        print(
+            "error: EVAL_LLM_MODEL and EVAL_LLM_API_KEY (or OPENAI_*) "
+            "required for LLM probe",
+            file=sys.stderr,
+        )
+        return 1
+    key, base, model = resolved
+    host = llm_host(base)
+    status, head, data = chat_completions(
+        key,
+        base,
+        model,
+        [{"role": "user", "content": "Say the word pong and nothing else."}],
+        # Reasoning models may spend early tokens on reasoning_content;
+        # keep enough headroom so content is non-empty.
+        max_tokens=64,
+        timeout=30,
+    )
+    if data is None:
+        print(
+            "error: LLM probe non-JSON (host=%s model=%s http=%s head=%r) — "
+            "use https://litellm-api.hutch.fail/v1 not litellm.hutch.fail"
+            % (host, model, status, head[:80]),
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        content = (data["choices"][0]["message"]["content"] or "").strip()
+    except (KeyError, IndexError, TypeError, AttributeError):
+        print(
+            "error: LLM probe bad JSON shape (host=%s model=%s http=%s)"
+            % (host, model, status),
+            file=sys.stderr,
+        )
+        return 1
+    if status != 200 or not content:
+        print(
+            "error: LLM probe empty or non-200 (host=%s model=%s http=%s content_len=%d)"
+            % (host, model, status, len(content)),
+            file=sys.stderr,
+        )
+        return 1
+    print(
+        "optmem llm probe ok host=%s model=%s http=%s content_len=%d"
+        % (host, model, status, len(content))
+    )
+    return 0
+
+
+def message_text(msg: dict) -> str:
+    """Assistant text from content, else last usable reasoning_content line."""
+    content = (msg.get("content") or "").strip()
+    if content:
+        return content
+    reasoning = (msg.get("reasoning_content") or "").strip()
+    if not reasoning:
+        return ""
+    for line in reversed(reasoning.splitlines()):
+        line = line.strip().strip('"').strip("'")
+        if not line:
+            continue
+        low = line.lower()
+        if low.startswith("compress memories") or low.startswith("run:"):
+            continue
+        if "final answer" in low:
+            continue
+        return line
+    return ""
+
+
+def nap_summary_ok(line: str) -> bool:
+    """Reject prompt-echo / meta-reasoning junk that pollutes TREE."""
+    if not line or not line.strip():
+        return False
+    s = line.strip().strip('"').strip("'")
+    if len(s.encode()) > 280 or len(s) < 24:
+        return False
+    low = s.lower()
+    bad_prefixes = (
+        "compress memories",
+        "run:",
+        "need ",
+        "draft:",
+        "potential issue",
+        "maybe ",
+        "let's ",
+        "we can ",
+        "we should ",
+        "could ",
+        "better ",
+        "actually ",
+        "wait ",
+        "also ",
+        "this is ~",
+        "count bytes",
+        "not awake",
+    )
+    if low.startswith(bad_prefixes):
+        return False
+    bad_substrings = (
+        "compress memories",
+        "at most 280",
+        "invent nothing",
+        "reply with only",
+        "lasting effect, drop",
+        "need ensure",
+        "need count",
+        "need maybe",
+        "need be careful",
+        "need exact",
+        "let's count",
+        "count bytes",
+        "could include",
+        "not invent",
+        "do not invent",
+        '" length:',
+        " length:",
+        "truncated",
+        "placeholder?",
+        "soft-rea...",
+        "draft sk...",
+    )
+    if any(b in low for b in bad_substrings):
+        return False
+    if 'nap ' in low and '"<' in low:
+        return False
+    # spaced-out letter junk from truncated reasoning
+    if re.search(r"(?:^|[^a-z])([a-z] ){3,}[a-z](?:$|[^a-z])", low):
+        return False
+    if s.count("?") >= 3 and len(s) < 100:
+        return False
+    # Must look like a content summary, not pure meta
+    if not re.search(r"(pr\s*#|\bevals\b|\bhub\b|\bscope\b|\bci\b|\bkit\b|\bmake\b|\bgoal)", low):
+        if not re.search(r"[a-z]{4,}", low):
+            return False
+    return True
+
+
+def heuristic_nap_summary(prompt: str) -> str | None:
+    """Deterministic cover line from nap prompt body (no LLM)."""
+    lines = []
+    for raw in prompt.splitlines():
+        m = re.match(r"^\s*#(\d+(?:-\d+)?)\s+(.+)$", raw)
+        if not m:
+            continue
+        rest = m.group(2).strip()
+        # Drop leading date token when present
+        rest = re.sub(r"^\d{4}-\d{2}-\d{2}\s+", "", rest)
+        if rest:
+            lines.append(rest)
+    if not lines:
+        return None
+    joined = "; ".join(lines)
+    if len(joined.encode()) > 280:
+        joined = joined.encode()[:277].decode("utf-8", "ignore") + "..."
+    return joined if len(joined) >= 16 else None
+
+
+def llm_summary(prompt: str, *, attempt: int = 1) -> str | None:
+    resolved = resolve_llm_env()
+    if not resolved:
+        return heuristic_nap_summary(prompt)
+    key, base, model = resolved
+    system = (
+        "You write OptMem cover lines. Output exactly one factual summary "
+        "sentence (<=280 bytes) about the repository decisions in the user "
+        "message. Keep lasting process/CI/kit facts. Invent nothing. "
+        "Forbidden: instructions, byte counts, 'need…', drafts, hedging, "
+        "quotes of the prompt, or anything other than the summary line."
+    )
+    if attempt > 1:
+        system += (
+            " Previous reply was rejected as meta/reasoning. "
+            "Output only the summary sentence now."
+        )
+    status, head, data = chat_completions(
+        key,
+        base,
+        model,
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt[:20000]},
+        ],
+        # Reasoning models spend early tokens on reasoning_content.
+        max_tokens=512,
+        timeout=180,
+    )
+    if data is None:
+        print(
+            "optmem reconcile: LLM nap skipped (non-JSON host=%s http=%s head=%r)"
+            % (llm_host(base), status, head[:80]),
+            file=sys.stderr,
+        )
+        h = heuristic_nap_summary(prompt)
+        if h:
+            print(
+                "optmem reconcile: using heuristic nap summary (%d bytes)"
+                % len(h.encode()),
+                file=sys.stderr,
+            )
+        return h
+    try:
+        text = message_text(data["choices"][0]["message"])
+        line = text.splitlines()[0].strip()
+    except (KeyError, IndexError, AttributeError, TypeError):
+        line = ""
+    if len(line.encode()) > 280:
+        line = line.encode()[:277].decode("utf-8", "ignore") + "..."
+    if line and nap_summary_ok(line):
+        return line
+    if line:
+        print(
+            "optmem reconcile: rejecting bad nap summary attempt=%d: %r"
+            % (attempt, line[:120]),
+            file=sys.stderr,
+        )
+    if attempt < 2:
+        return llm_summary(prompt, attempt=attempt + 1)
+    h = heuristic_nap_summary(prompt)
+    if h:
+        print(
+            "optmem reconcile: using heuristic nap summary (%d bytes)"
+            % len(h.encode()),
+            file=sys.stderr,
+        )
+    return h
+
+
+def drain_naps(kit: Path, memory: Path, seed_out: str, *, cap: int = 256) -> int:
+    """Pay every pending memo nap. Return 0 on success, non-zero on failure.
+
+    No EVAL_LLM_* → soft-skip (unit tests / offline). Keys present → fail closed
+    if the summary is missing or rejected after retry.
+    """
+    out = seed_out
+    have_llm = resolve_llm_env() is not None
+    for _ in range(cap):
+        m = NAP_RUN_RE.search(out)
+        if not m:
+            return 0
+        block = m.group(1)
+        summary = llm_summary(out)
+        if not summary:
+            if not have_llm:
+                print(
+                    "optmem reconcile: pending nap %s (no EVAL_LLM_MODEL/key)"
+                    % block,
+                    file=sys.stderr,
+                )
+                return 0
+            print(
+                "optmem reconcile: FAIL nap %s (LLM summary unavailable or rejected)"
+                % block,
+                file=sys.stderr,
+            )
+            return 1
+        r = run_memo(kit, memory, ["nap", block, summary], check=False)
+        print_proc(r)
+        if r.returncode != 0:
+            print(
+                "optmem reconcile: nap %s failed rc=%s" % (block, r.returncode),
+                file=sys.stderr,
+            )
+            return r.returncode or 1
+        out = (r.stdout or "") + (r.stderr or "")
+    print(
+        "optmem reconcile: drain_naps hit cap %d (pending remain)" % cap,
+        file=sys.stderr,
+    )
+    return 1
+
+
+def cmd_reconcile(groot: Path, kit: Path) -> int:
+    os.environ["OPTMEM_RECONCILE"] = "1"
+    mem = main_memory(groot)
+    if not mem.is_dir():
+        die("missing %s — run: %s init" % (mem, Path(__file__).resolve()))
+    shards = list_shards(groot)
+    if not shards:
+        print("optmem reconcile: no shards")
+        return 0
+    for shard in shards:
+        texts = log_texts(shard / "memory")
+        for t in texts:
+            r = run_memo(kit, mem, ["note", t], check=False)
+            print_proc(r)
+            if r.returncode != 0:
+                return r.returncode
+            rc = drain_naps(kit, mem, (r.stdout or "") + (r.stderr or ""))
+            if rc != 0:
+                return rc
+        shutil.rmtree(shard)
+        print("optmem reconcile: absorbed %s" % shard.name)
+    ws = write_shard_file(groot)
+    if ws.is_file():
+        ws.unlink()
+    return 0
+
+
+def cmd_doctor(groot: Path, kit: Path, *, probe_llm_flag: bool = False) -> int:
+    fail = 0
+
+    def miss(msg: str) -> None:
+        nonlocal fail
+        print("error: %s" % msg, file=sys.stderr)
+        fail = 1
+
+    if nested_evals_store(groot):
+        miss("store must not live under nested evals/")
+    od = optmem_dir(groot)
+    gi = od / ".gitignore"
+    mem = main_memory(groot)
+    if not mem.is_dir():
+        miss("missing %s" % mem)
+    if not gi.is_file() or ".lock" not in gi.read_text(encoding="utf-8"):
+        miss("%s must ignore .lock" % gi)
+    got = file_sha256(memo_bin(kit))
+    want = pinned_sha256(kit)
+    if got != want:
+        miss("upstream/memo sha256 %s != PINNED %s (do not edit memo)" % (got, want))
+    for p in list_shards(groot):
+        if not SHARD_RE.match(p.name):
+            miss("bad shard name %s" % p.name)
+    if mem.is_dir():
+        r = run_memo(kit, mem, ["wake"], check=False)
+        if r.returncode != 0:
+            sys.stderr.write(r.stderr or r.stdout or "wake failed\n")
+            fail = 1
+        else:
+            print((r.stdout or "").rstrip())
+    if fail == 0:
+        print("optmem doctor ok root=%s kit=%s" % (groot, kit))
+    if probe_llm_flag or os.environ.get("OPTMEM_DOCTOR_LLM") == "1":
+        if probe_llm() != 0:
+            fail = 1
+    return fail
+
+
+def cmd_wake_fanin(groot: Path, kit: Path, extra: list[str]) -> int:
+    memories = [main_memory(groot)]
+    memories.extend(p / "memory" for p in reversed(list_shards(groot)))
+    budget_left = True
+    for i, mem in enumerate(memories):
+        if not mem.is_dir():
+            continue
+        r = run_memo(kit, mem, ["wake", *extra], check=False)
+        rc = print_proc(r)
+        if rc != 0:
+            return rc
+        if i == 0 and not list_shards(groot):
+            return 0
+    return 0
+
+
+def passthrough(groot: Path, kit: Path, cmd: str, args: list[str]) -> int:
+    if cmd in {"note", "nap", "forget", "config"}:
+        mem = write_memory(groot, kit)
+        return print_proc(run_memo(kit, mem, [cmd, *args], check=False))
+    if cmd in {"recall", "zoom"}:
+        rc = 0
+        for mem in [main_memory(groot), *[p / "memory" for p in list_shards(groot)]]:
+            if not mem.is_dir():
+                continue
+            r = run_memo(kit, mem, [cmd, *args], check=False)
+            print_proc(r)
+            rc = rc or r.returncode
+        return rc
+    die("unknown command %s" % cmd)
+    return 1
+
+
+def usage() -> str:
+    me = pretty(Path(__file__).resolve())
+    return (
+        "Repo OptMem wrapper (unmodified upstream memo + MEMORY_DIR).\n"
+        "  %s init | doctor [--llm] | wake | note | nap | recall | zoom | "
+        "forget | config | reconcile\n"
+        "Store: <git-root>/.optmem/main/memory\n"
+        "PR inbox: <git-root>/.optmem/shards/<UTC>-<branch>/memory\n"
+        "doctor --llm: fail-closed chat/completions probe "
+        "(EVAL_LLM_* / litellm-api host)\n"
+        % me
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv or argv[0] in {"-h", "--help"}:
+        print(usage().rstrip())
+        return 0
+    cmd = argv[0]
+    rest = argv[1:]
+    groot = git_root()
+    kit = kit_root(groot)
+    if cmd == "init":
+        return cmd_init(groot, kit)
+    if cmd == "doctor":
+        probe = "--llm" in rest or os.environ.get("OPTMEM_DOCTOR_LLM") == "1"
+        return cmd_doctor(groot, kit, probe_llm_flag=probe)
+    if cmd == "reconcile":
+        return cmd_reconcile(groot, kit)
+    if cmd == "wake":
+        return cmd_wake_fanin(groot, kit, rest)
+    if cmd in {
+        "note",
+        "nap",
+        "recall",
+        "zoom",
+        "forget",
+        "config",
+    }:
+        if not main_memory(groot).is_dir() and cmd != "note":
+            die("no store; run: %s init" % Path(__file__).resolve())
+        if cmd == "note" and not main_memory(groot).is_dir():
+            cmd_init(groot, kit)
+        return passthrough(groot, kit, cmd, rest)
+    print("No such command: %s\n" % cmd, file=sys.stderr)
+    print(usage(), file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

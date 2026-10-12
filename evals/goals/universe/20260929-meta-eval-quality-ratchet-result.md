@@ -1,17 +1,8 @@
----
-schema: result/v1
-id: 20260929-meta-eval-quality-ratchet-result
-goal_id: 20260929-meta-eval-quality-ratchet
-status: pass
----
-
 # Executive outcome
 
-The universe pack-quality ratchet is live: Tier-1 deterministic lint (with
-good/bad selftest) always runs on `make eval/bars`, Tier-2 Jev calibrate and
-Tier-3 LiteLLM pack rubric follow the PRE_COMMIT / CI key-gate contract, and
-`build-eval` / `hillclimb` skills plus executive templates are in the hub.
-Soft LLM product judges in goal-judge stay deferred.
+Adopt the Tier2 rewrite: Jev holistic pack-quality on changed goals, with
+path-triggered `jev-*` sample selftest. Toy `meta/calibrate` is no longer
+consumer fail-closed Tier2.
 
 # Result
 
@@ -19,52 +10,63 @@ Soft LLM product judges in goal-judge stay deferred.
 
 # Outcome
 
-Hub bars and this goal’s F2P/P2P path are green. New packs that opt into
-`# Executive overview` or `pack_quality: required` get fail-closed structure
-checks; legacy packs remain grandfathered until they opt in.
+- Universe bar `goals/universe/20260929-meta-eval-quality-ratchet.md` updated for
+  Jev-on-changed-goals + demoted calibrate.
+- Fixture `check.sh` Tier2 wires `jev_pack_quality_judge`; path-gate unit proves
+  product-only changes skip sample selftest; judge/sample/`check.sh` changes run it.
+- Labeled samples `jev-good` / `jev-bad-mirror` / `jev-bad-ambiguity` agree with
+  live TypeSafe selftest (3/3).
 
 # Proof
 
 ```text
-$ HERMES_EVAL_KIT=$PWD make eval/assert-red GOAL=universe/20260929-meta-eval-quality-ratchet
-assert-red OK: F2P is red on baseline (check.sh exit 1)
-verdict=certified_red
-```
-
-```text
-$ HERMES_EVAL_KIT=$PWD make eval/verify GOAL=universe/20260929-meta-eval-quality-ratchet
-pack_quality_selftest_good_ok
-pack_quality_selftest_bad_ok n_errors=9
-pack_quality_ok path=…/goals/demo/thin-pack.md
-meta_eval_pack_quality_ok … mode=all
-verify OK: F2P+P2P green after golden.patch
-```
-
-```text
-$ HERMES_EVAL_KIT=$PWD HERMES_EVAL_SCAN_ROOT=$PWD PRE_COMMIT=1 make eval/bars
-pack_quality_ok path=…/goals/universe/20260929-meta-eval-quality-ratchet.md
-meta_eval_tier2_skip reason=no_TYPESAFE_API_KEY …
-meta_eval_tier3_skip reason=no_EVAL_LLM_key_or_model …
-meta_eval_pack_quality_ok … mode=opt-in
-```
-
-```text
-$ bash tests/unit/test_eval_bars.sh && bash tests/unit/test_meta_dev_skills.sh
+$ bash tests/unit/test_eval_bars.sh
 ✓ eval-bars family detection
-✓ meta-dev skills
+
+$ HERMES_EVAL_PROBE_JEV_SELFTEST_GATE=1 \
+    HERMES_EVAL_CHANGED_PATHS='goals/universe/pr-new.md' \
+    bash fixtures/universe/20260929-meta-eval-pack-quality/check.sh
+jev_selftest_gate=skip
+
+$ HERMES_EVAL_PROBE_JEV_SELFTEST_GATE=1 \
+    HERMES_EVAL_CHANGED_PATHS='harness/lib/jev_pack_quality_judge.py' \
+    bash fixtures/universe/20260929-meta-eval-pack-quality/check.sh
+jev_selftest_gate=run
+
+$ # F2P: baseline red, golden green + p2p
+assert-red OK (thin demo fails Tier1); after golden.patch check + p2p-smoke exit 0
+
+$ make meta/pack-judge-selftest
+jev_pack_judge_selftest: 3/3 agree (errors=0)
 ```
-
-# Blocking findings
-
-None for the claimed scope. Live TypeSafe / LiteLLM authenticity still depends
-on keys in CI.
-
-# Next action
-
-Land goal+fixture first; commit this result in a later local commit. Pass
-`TYPESAFE_API_KEY` and `EVAL_LLM_*` + `EVAL_LLM_MODEL` into eval-ci when Tier2/3
-should run fail-closed in CI.
 
 # Manual verification
 
-None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.
+| Ran by hand | Observed | Automated check | Tier |
+| --- | --- | --- | --- |
+| `tests/unit/test_eval_bars.sh` | exit 0; path-gate + no calibrate | same unit in eval-ci | hermetic |
+| F2P tempdir + `golden.patch` | baseline fail; check + p2p green | fixture check / p2p-smoke | hermetic |
+| `make meta/pack-judge-selftest` | 3/3 agree | Tier2 path-triggered selftest | live-proof |
+
+# Blocking findings
+
+None.
+
+# Comparison
+
+| Question | What this run shows | Requirement | Result |
+| --- | --- | --- | --- |
+| Tier2 no longer calls calibrate? | `check.sh` awk gate + unit | No live make meta/calibrate | Met |
+| Path-gate? | probe skip vs run | Product-only skip; judge change run | Met |
+| Jev samples? | live selftest 3/3 | expected.yaml agree | Met |
+| F2P? | baseline fail; golden pass | red then green | Met |
+
+# Evidence and limitations
+
+Hermetic unit/F2P plus one live TypeSafe selftest on the author machine and CI
+eval-ci head. Does not prove every consumer pin has bumped yet — pin follow-up
+is out of this hub PR.
+
+# Next action
+
+Merge hub; bump evals pin in consumer repos so product PRs get Jev Tier2.

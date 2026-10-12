@@ -1,0 +1,10 @@
+{
+  "id": "structure-only-blocked",
+  "description": "Same structure-only evidence, but disposition correctly left blocked.",
+  "claim_kind": "demo",
+  "wrote_iac_or_examples": true,
+  "ran_or_converged": false,
+  "surfaced_durable_artifact": false,
+  "explicit_waiver": false,
+  "disposition": "blocked"
+}

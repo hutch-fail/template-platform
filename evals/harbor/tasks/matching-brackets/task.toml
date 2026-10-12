@@ -1,0 +1,35 @@
+schema_version = "1.4"
+artifacts = []
+
+[task]
+name = "hutch-fail/matching-brackets"
+version = "1.0.0"
+description = "Exercism Python matching-brackets"
+keywords = []
+[[task.authors]]
+name = "hutch-fail research"
+
+[metadata]
+author_name = "hutch-fail research"
+category = "coding"
+tags = ["exercism", "python", "matching-brackets"]
+difficulty_explanation = "Exercism Python practice exercise: matching brackets via stack"
+
+[verifier]
+timeout_sec = 600.0
+collect = []
+
+[verifier.env]
+
+[agent]
+timeout_sec = 600.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 600.0
+os = "linux"
+mcp_servers = []
+
+[environment.env]
+
+[solution.env]

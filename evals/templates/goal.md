@@ -47,6 +47,23 @@ must be graded by a check that **executes** that path from the documented
 starting state, not only by `grep`s of the files that implement it
 (`PROCESS.md` “Manual verification becomes a test”).
 
+**Kick the tires:** a row that claims operators use ensure/heal/reconcile/
+bootstrap/seed/mirror/bind (or that invent/skills receive seed) must call that
+entrypoint in `check.sh` and assert an observable — not only `grep -Fq` the
+symbol. Prefer a second pass when day-2 reconverge is in scope
+(`PROCESS.md` “Use path vs wiring path”).
+
+**Live path (Host / health L0):** a row that claims `*.localhost`, `/dashboard`,
+or curl-health → 200 must grade that `doctor` / `test/smoke` / `make up`
+**invokes** the probe — not only that `probe-….sh` mentions `curl`. Prefer the
+product smoke path over inventing `HERMES_EVAL_LIVE_*` packs
+(`PROCESS.md` “Live path vs probe-script path”). Done records live-proof from
+running that smoke.
+
+Desktop-adjacent packs (in-session openbox / Kasm GUI): grade `menu.d` /
+`menu.xml` plus a DISPLAY launcher, not only `command -v`. If the install is
+CLI-only, say so under Limitations (`PROCESS.md` “Launch path vs install path”).
+
 | Criterion | What we look at |
 | --- | --- |
 |  |  |
@@ -88,7 +105,9 @@ How many tries, which model, time limit, and whether a failed try is repeated.
 # Limitations
 
 What a pass would still leave unproven. Name hold-out gaps here when Dataset
-cannot yet declare a train/test split.
+cannot yet declare a train/test split. If the pack is easy to game or easy for
+a careful human to get wrong, name that **specific** reason here — a slogan
+such as “this pack is hard for humans” is not enough.
 
 If a manual or live run is how you close an outcome, name which automated check
 now repeats it (or why none can) — the result must carry a `# Manual

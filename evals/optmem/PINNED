@@ -1,0 +1,4 @@
+# Unmodified OptMem pin. Do not edit upstream/memo.
+# Source: https://github.com/VictorTaelin/OptMem
+git_sha: 1fb164cf39028047781f72ac3bb1e5a691c1dcb0
+memo_sha256: 3dc120d01be3115ef6267eab4103e7909fc830d6227b549f20991ba999ee9ffb

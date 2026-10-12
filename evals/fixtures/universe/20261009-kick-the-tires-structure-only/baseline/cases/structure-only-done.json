@@ -1,0 +1,10 @@
+{
+  "id": "structure-only-done",
+  "description": "Agent wrote IaC/examples for a live-behavior ask but never ran, converged, or surfaced a durable artifact, then marked done.",
+  "claim_kind": "demo",
+  "wrote_iac_or_examples": true,
+  "ran_or_converged": false,
+  "surfaced_durable_artifact": false,
+  "explicit_waiver": false,
+  "disposition": "done"
+}

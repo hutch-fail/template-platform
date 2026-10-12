@@ -127,6 +127,7 @@ evals/   (this repo, or <project>/evals after subtree)
 
 Cursor rule: `.cursor/rules/meta-dev.mdc`. Agent prefs: [`AGENTS.md`](AGENTS.md).
 Pack-quality ratchet: [`docs/meta-eval-quality.md`](docs/meta-eval-quality.md).
+Prior art wrap: [`docs/prior-art.md`](docs/prior-art.md).
 
 ## TB1 smoke / TB2a
 

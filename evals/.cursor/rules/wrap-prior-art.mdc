@@ -1,0 +1,30 @@
+---
+description: >-
+  Wrap and pin existing tools; do not reimplement prior art when an upstream
+  exists. Adapters use documented extension points, not forks of source.
+alwaysApply: true
+---
+
+# Wrap prior art
+
+When a named upstream tool already implements the mechanism (CLI, protocol,
+store format), **pin an unmodified copy** and put org/repo/git/CI behavior in a
+**wrapper**. Do not rewrite the upstream in-tree to “make it ours.”
+
+## Do
+
+- Record the pin (git SHA and content hash) next to the vendored file.
+- Extend through the hook the tool already ships (`MEMORY_DIR`, flags, env,
+  subprocess). If it has no hook, wrap it; do not patch its source.
+- Teach agents the **wrapper** path in `AGENTS.md`, not a rewritten clone.
+
+## Do not
+
+- Copy an unlicensed or third-party program and then edit it as if it were ours.
+- Reimplement a cover/log/tree/engine “inspired by” an upstream that we already
+  vendor.
+- Relicense third-party files. Note rights in `THIRD_PARTY.md` when there is no
+  license.
+
+This repository’s OptMem integration is the instance: `optmem/upstream/memo` is
+immutable; `optmem/repo-memo` is the layer.

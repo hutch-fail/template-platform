@@ -27,6 +27,10 @@ to claim a change **works** / **done**:
 
 - Treat green CI, typecheck, or reading the diff as verification of runtime
   behavior.
+- Treat hermetic F2P that only greps a probe script for `curl` / `*.localhost`
+  as Done for a Host URL claim — wire L0 into `doctor` / `test/smoke` / `make
+  up`, run that smoke, and record live-proof (PROCESS.md “Live path vs
+  probe-script path”).
 - Stop at “should work once applied,” “once you refresh,” or similar hedges
   when you can run a proportionate check now (or after an approved ask).
 - Put product-specific stack paths, mount maps, or host tooling recipes in this

@@ -25,7 +25,3 @@ Consumers must declare `languages: typescript` and have `node_modules`.
 # Next action
 
 Meter declares `typescript` alongside `ui`.
-
-# Manual verification
-
-None — kit redistribute from hub 518db3f; eval-ci and pre-commit bars are the covering automated checks.

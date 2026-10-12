@@ -94,6 +94,16 @@ if ! grep -q 'assert-red' "${ROOT}/skills/goal-author/SKILL.md"; then
   fail=1
 fi
 
+if ! grep -q 'Launch path vs install' "${ROOT}/PROCESS.md"; then
+  printf '✗ PROCESS.md must document Launch path vs install path\n' >&2
+  fail=1
+fi
+
+if ! grep -q 'Launch path vs install PATH' "${ROOT}/skills/goal-author/SKILL.md"; then
+  printf '✗ goal-author must document launch path vs install PATH\n' >&2
+  fail=1
+fi
+
 if ! grep -q 'verify' "${ROOT}/skills/goal-judge/SKILL.md"; then
   printf '✗ goal-judge must mention verify\n' >&2
   fail=1

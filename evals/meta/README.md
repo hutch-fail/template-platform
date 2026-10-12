@@ -1,4 +1,10 @@
-# Meta-eval bootstrap (TypeSafe)
+# Meta-eval bootstrap (TypeSafe) — hub-only criterion toys
+
+**Not consumer pack-quality CI.** Pack-quality Tier2 grades **real goal
+markdown** via `harness/lib/jev_pack_quality_judge.py` (see
+[`docs/meta-eval-quality.md`](../docs/meta-eval-quality.md)). This directory
+is an optional hub experiment for **candidate criterion** definition quality
+(`make meta/calibrate`). Do not wire it into fail-closed consumer `eval-ci`.
 
 Crawl-sized gate for **candidate eval criteria** before they become trusted
 LLM/TypeSafe rubrics.
