@@ -1,0 +1,13 @@
+[
+  {
+    "runId": "arm-b-success",
+    "status": "succeeded",
+    "usageJson": {
+      "model": "litellm/meter/colin/premium",
+      "costUsd": 0,
+      "inputTokens": 29557,
+      "outputTokens": 1273,
+      "cachedInputTokens": 232576
+    }
+  }
+]

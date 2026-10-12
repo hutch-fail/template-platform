@@ -28,6 +28,9 @@ grep -q '20261002-local-eval-gates' "${bars}" || miss "eval-bars missing local-e
 grep -q '20261004-sync-secrets-pin-github-owner' "${bars}" || miss "eval-bars missing sync-secrets GITHUB_OWNER pin universe bar"
 grep -q '20261004-cf-migration-old-secrets' "${bars}" && miss "eval-bars still lists sunset cf-migration OLD_ secrets universe bar" || true
 grep -q '20260929-meta-eval-pack-quality' "${bars}" || miss "eval-bars missing meta-eval-pack-quality universe bar"
+if grep -q 'fixtures/universe/20261005-optmem-repo-memory/check.sh' "${bars}"; then
+  miss "eval-bars must not wire optmem-repo-memory as a universe always-on bar (hub-only)"
+fi
 local_gates_check="${ROOT}/fixtures/universe/20261002-local-eval-gates/check.sh"
 [[ -x "${local_gates_check}" ]] || miss "local-eval-gates check not executable"
 
@@ -35,6 +38,57 @@ pack_check="${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/check.sh"
 [[ -x "${pack_check}" ]] || miss "meta-eval-pack-quality check not executable"
 [[ -f "${ROOT}/harness/lib/pack_quality_lint.py" ]] || miss "missing pack_quality_lint.py"
 [[ -f "${ROOT}/harness/lib/llm_pack_quality_judge.py" ]] || miss "missing llm_pack_quality_judge.py"
+[[ -f "${ROOT}/harness/lib/jev_pack_quality_judge.py" ]] || miss "missing jev_pack_quality_judge.py"
+[[ -f "${ROOT}/harness/lib/pack_quality_select.py" ]] || miss "missing pack_quality_select.py"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/jev-good/goal.md" ]] \
+  || miss "missing jev-good sample"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/jev-good/expected.yaml" ]] \
+  || miss "missing jev-good expected.yaml"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/jev-bad-mirror/expected.yaml" ]] \
+  || miss "missing jev-bad-mirror expected.yaml"
+grep -q 'jev_pack_quality_judge' "${pack_check}" || miss "pack-quality check must wire Jev judge"
+if awk '
+  /make/ && /meta\/calibrate/ && !/grep/ && !/awk/ && !/printf/ && !/^[[:space:]]*#/ {
+    exit 0
+  }
+  END { exit 1 }
+' "${pack_check}"; then
+  miss "pack-quality Tier2 must not call meta/calibrate"
+fi
+grep -q 'export HERMES_EVAL_CHANGED_PATHS' "${bars}" || miss "eval-bars must export HERMES_EVAL_CHANGED_PATHS"
+dump="$(HERMES_EVAL_DUMP_CHANGED_PATHS=1 HERMES_EVAL_SCAN_ROOT="${ROOT}" bash "${bars}" 'goals/universe/pr-new.md' || true)"
+printf '%s\n' "${dump}" | grep -qx 'goals/universe/pr-new.md' || miss "eval-bars dump should echo argv path: ${dump}"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/good-desktop/goal.md" ]] \
+  || miss "missing good-desktop pack-quality sample"
+[[ -x "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/good-desktop/check.sh" ]] \
+  || miss "good-desktop check.sh not executable"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/bad-desktop/goal.md" ]] \
+  || miss "missing bad-desktop pack-quality sample"
+[[ -x "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/bad-desktop/check.sh" ]] \
+  || miss "bad-desktop check.sh not executable"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/good-use/goal.md" ]] \
+  || miss "missing good-use pack-quality sample"
+[[ -x "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/good-use/check.sh" ]] \
+  || miss "good-use check.sh not executable"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/bad-use/goal.md" ]] \
+  || miss "missing bad-use pack-quality sample"
+[[ -x "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/bad-use/check.sh" ]] \
+  || miss "bad-use check.sh not executable"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/good-live/goal.md" ]] \
+  || miss "missing good-live pack-quality sample"
+[[ -x "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/good-live/check.sh" ]] \
+  || miss "good-live check.sh not executable"
+[[ -f "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/bad-live/goal.md" ]] \
+  || miss "missing bad-live pack-quality sample"
+[[ -x "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples/bad-live/check.sh" ]] \
+  || miss "bad-live check.sh not executable"
+if ! python3 "${ROOT}/harness/lib/pack_quality_lint.py" \
+  --scan-root "${ROOT}" \
+  --selftest "${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality/samples" \
+  --selftest-only >/dev/null; then
+  miss "pack-quality selftest (desktop/use/live-path kick-tires samples) failed"
+fi
+
 
 # Pack-quality: fixture baseline fails; PRE_COMMIT skips Tier2/3 without keys on hub root.
 if HERMES_EVAL_KIT="${ROOT}" HERMES_EVAL_REPO_ROOT="${ROOT}" HERMES_EVAL_SCAN_ROOT="${ROOT}/fixtures/universe/20260929-meta-eval-pack-quality" \

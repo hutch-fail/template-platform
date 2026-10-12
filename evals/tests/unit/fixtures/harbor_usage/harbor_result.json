@@ -1,0 +1,8 @@
+{
+  "agent_result": {
+    "n_input_tokens": 15608,
+    "n_output_tokens": 3235,
+    "n_cache_tokens": 2176,
+    "cost_usd": null
+  }
+}

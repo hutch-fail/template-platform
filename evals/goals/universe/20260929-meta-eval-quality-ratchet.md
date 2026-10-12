@@ -23,12 +23,18 @@ product agent trajectories.
 # Decision
 
 A pass lets us say `make eval/bars` always runs Tier-1 deterministic pack-quality
-lint (selftest good/bad + opt-in/executive packs), Tier-2 `meta/calibrate` when
-`TYPESAFE_API_KEY` is set (skip under `PRE_COMMIT=1` / fixture mode when unset),
-and Tier-3 LiteLLM pack rubric when `EVAL_LLM_*`/`OPENAI_*` plus `EVAL_LLM_MODEL`
-are set (same skip contract). Skills `build-eval` and `hillclimb` exist for the
-Claude-inspired authoring/optimize loop, and templates lead with executive
-narrative plus proof snippets in results.
+lint (selftest good/bad plus good-desktop/bad-desktop launch-path,
+good-use/bad-use kick-the-tires use-path, and opt-in/executive packs), Tier-2
+Jev holistic pack-quality on **changed goals** when `TYPESAFE_API_KEY` is set
+(labeled `jev-*` sample selftest only when the judge/samples/wiring change;
+skip under `PRE_COMMIT=1` / fixture mode when unset), and Tier-3 LiteLLM pack
+rubric when `EVAL_LLM_*` / `OPENAI_*` plus `EVAL_LLM_MODEL` are set (same skip
+contract). Toy `meta/calibrate` criterion quizzes are **not** Tier2.
+Launch-path lint rejects in-session GUI claims that only grade PATH/dpkg.
+Use-path lint rejects behavior claims graded only by wiring greps (and
+single-shot ensure without re-entry unless Limitations say so). Skills
+`build-eval` and `hillclimb` exist for the Claude-inspired authoring/optimize
+loop, and templates lead with executive narrative plus proof snippets in results.
 
 A pass does not let us claim soft trajectory LLM rubrics inside `goal-judge`,
 nor that every legacy goal already meets the executive opt-in bar.
@@ -47,9 +53,10 @@ LiteLLM pack-quality gates.
 | Covered | Not covered |
 | --- | --- |
 | Universe Tier1 lint + selftest samples | Soft LLM product trajectory judges |
-| Tier2 meta/calibrate key-gate | Migrating all legacy goals to executive opt-in |
+| Tier2 Jev on changed goals + path-gated sample selftest | Migrating all legacy goals to executive opt-in |
 | Tier3 LiteLLM pack rubric key+model gate | Anthropic proprietary claude-api skill internals |
 | build-eval + hillclimb skills + templates | Installing agent tools without green verdict |
+| Hub-only `meta/calibrate` demoted | Using toy HTTP-status quizzes as pack-quality CI |
 
 # Success criteria
 
@@ -57,8 +64,12 @@ LiteLLM pack-quality gates.
 | --- | --- |
 | Starts broken | Fixture demo pack fails Tier1; `check.sh` exits non-zero |
 | The fix works | After `golden.patch`, demo pack + selftest green; `check.sh` exits 0 |
+| Launch-path samples | `good-desktop` passes; `bad-desktop` fails launch-path (PATH-only GUI) |
+| Use-path samples | `good-use` passes; `bad-use` fails use-path (wiring-only greps) |
 | Bars wired | `run_universe_bars` invokes this check |
 | Tier2/3 contract | Missing keys skip under PRE_COMMIT/fixture; fail closed otherwise |
+| Tier2 Jev wiring | `check.sh` uses `jev_pack_quality_judge`; no `meta/calibrate`; path-gate unit |
+| Jev samples | `samples/jev-good` + `jev-bad-*` with `expected.yaml` |
 | Skills + docs | build-eval, hillclimb, templates, meta-dev/goal-author/goal-judge updated |
 | Nothing else breaks | `p2p-smoke.sh` stays green |
 
@@ -99,6 +110,14 @@ locally when TypeSafe/LiteLLM keys are unset).
 Does not prove live TypeSafe or LiteLLM authenticity beyond what keys allow in
 the environment. Does not rewrite legacy packs. Does not enable soft LLM
 rubrics in goal-judge.
+
+A careful author can still game Tier-1 by claiming GUI launch while only
+asserting PATH/dpkg presence (or a stub menu entry that never opens under
+DISPLAY) if launch-path samples and lint are skipped or scoped away — the bar
+then greens without proving an in-session launcher path. The same class of miss
+for ensure/heal/seed: grepping the symbol without calling it, or calling once
+and skipping reconverge, is rejected by use-path samples when the claim is in
+scope.
 
 # Result file
 

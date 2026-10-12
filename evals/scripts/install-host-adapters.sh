@@ -21,10 +21,11 @@ for name in "${skills[@]}"; do
   ln -sfn "../../evals/skills/${name}" "${PROJECT_ROOT}/.agents/skills/${name}"
 done
 
-for rule in meta-dev.mdc goal-spec.mdc live-verify.mdc; do
+for rule in meta-dev.mdc goal-spec.mdc live-verify.mdc wrap-prior-art.mdc; do
   [[ -f "${EVALS_DIR}/.cursor/rules/${rule}" ]] || die "missing rule ${rule}"
   ln -sfn "../../evals/.cursor/rules/${rule}" "${PROJECT_ROOT}/.cursor/rules/${rule}"
 done
 
 printf '✓ host adapters installed under .cursor/ and .agents/ → evals/skills\n'
+printf '  OptMem is hub-local for hutch-fail/evals today; product-root memory stores are out of scope\n'
 printf '  next: make -C evals eval/assert-red GOAL=fixture-token-echo\n'

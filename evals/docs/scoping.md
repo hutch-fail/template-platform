@@ -222,12 +222,14 @@ goals/universe/20260924-no-gha-app-actions-secrets.md
 goals/universe/20260929-pre-commit-platform.md
 goals/universe/20261002-local-eval-gates.md
 goals/universe/20261004-sync-secrets-pin-github-owner.md
+goals/universe/20261005-wrap-prior-art.md
 fixtures/token-echo/
 fixtures/hub-kit-smoke/
 fixtures/universe/20260924-no-gha-app-actions-secrets/
 fixtures/universe/20260929-pre-commit-platform/
 fixtures/universe/20261002-local-eval-gates/
 fixtures/universe/20261004-sync-secrets-pin-github-owner/
+fixtures/universe/20261005-wrap-prior-art/
 ```
 
 ```yaml
@@ -335,7 +337,11 @@ Applies only when the consumer manifest lists `opentofu`.
 
 ```text
 goals/github.com/hutch-fail/platform-github/20260921-manage-evals-repo.md
+goals/github.com/hutch-fail/evals/20261005-optmem-repo-memory.md
+fixtures/github.com/hutch-fail/evals/20261005-optmem-repo-memory/
 ```
+
+OptMem is hub-only (`hutch-fail/evals`); not a universe always-on bar.
 
 ```yaml
 ---

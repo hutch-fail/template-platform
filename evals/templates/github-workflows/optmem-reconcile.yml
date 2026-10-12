@@ -1,0 +1,46 @@
+# Optional template for products that later adopt OptMem at their git root.
+# Not required by universe bars. Hub uses .github/workflows/optmem-reconcile.yml
+# with python3 optmem/repo-memo. Consumers would run evals/optmem/repo-memo.
+name: optmem reconcile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".optmem/shards/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: optmem-reconcile-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: ${{ !contains(github.event.head_commit.message, '[optmem-reconcile]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Reconcile shards into main
+        env:
+          OPTMEM_RECONCILE: "1"
+          HERMES_EVAL_KIT: ${{ github.workspace }}/evals
+          EVAL_LLM_API_KEY: ${{ secrets.EVAL_LLM_API_KEY }}
+          EVAL_LLM_BASE_URL: ${{ secrets.EVAL_LLM_BASE_URL }}
+          EVAL_LLM_MODEL: ${{ secrets.EVAL_LLM_MODEL }}
+        run: python3 evals/optmem/repo-memo reconcile
+      - name: Commit absorbed store
+        run: |
+          git add .optmem
+          if git diff --cached --quiet; then
+            echo "no optmem changes"
+            exit 0
+          fi
+          git config user.name "optmem-reconcile"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "[optmem-reconcile] fold shards into main"
+          git push

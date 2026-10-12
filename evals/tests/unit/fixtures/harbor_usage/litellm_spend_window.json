@@ -1,0 +1,34 @@
+[
+  {
+    "startTime": "2026-10-08T18:40:30.339000Z",
+    "model": "deepseek/deepseek-v4-pro",
+    "spend": 0.0016137,
+    "prompt_tokens": 30162,
+    "completion_tokens": 41,
+    "call_type": "acompletion"
+  },
+  {
+    "startTime": "2026-10-08T18:40:27.898000Z",
+    "model": "deepseek/deepseek-v4-pro",
+    "spend": 0.001109592,
+    "prompt_tokens": 28808,
+    "completion_tokens": 114,
+    "call_type": "acompletion"
+  },
+  {
+    "startTime": "2026-10-08T17:00:00.000000Z",
+    "model": "deepseek/deepseek-v4-pro",
+    "spend": 9.99,
+    "prompt_tokens": 1000,
+    "completion_tokens": 10,
+    "call_type": "acompletion"
+  },
+  {
+    "startTime": "2026-10-08T18:40:00.000000Z",
+    "model": "MCP: list_tools",
+    "spend": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "call_type": "list_mcp_tools"
+  }
+]

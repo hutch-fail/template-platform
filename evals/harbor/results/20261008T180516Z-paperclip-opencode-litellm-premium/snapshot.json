@@ -1,0 +1,59 @@
+{
+  "arm": "B",
+  "path": "paperclip\u2192opencode\u2192litellm/premium",
+  "identifier": "DEF-99",
+  "status": "done",
+  "reward": 1.0,
+  "elapsedSec": 754,
+  "versionPin": "paperclip 2026.1001.0; opencode 1.18.34; litellm meter/colin/premium @ :4000",
+  "capturedAt": "2026-10-08T22:13:22Z",
+  "usage": {
+    "input_tokens": 29557,
+    "output_tokens": 1273,
+    "cache_tokens": 232576
+  },
+  "costUsd": 0.031668472,
+  "costKind": "measured",
+  "costBasis": "litellm.spend.logs",
+  "costModel": "deepseek",
+  "tokenSourceId": "paperclip.runs",
+  "usageSources": [
+    {
+      "source_id": "paperclip.runs",
+      "confidence": 0.9,
+      "raw_ref": "ctx.paperclip_runs",
+      "tokens": {
+        "input_tokens": 29557,
+        "output_tokens": 1273,
+        "cache_tokens": 232576
+      },
+      "cost": {
+        "usd": 0.0,
+        "kind": "measured",
+        "basis": "paperclip.runs.usageJson",
+        "model": "litellm/meter/colin/premium"
+      }
+    },
+    {
+      "source_id": "litellm.spend",
+      "confidence": 0.85,
+      "raw_ref": "ctx.litellm_spend_logs",
+      "tokens": {
+        "input_tokens": 267655,
+        "output_tokens": 1717,
+        "cache_tokens": 0
+      },
+      "cost": {
+        "usd": 0.031668472,
+        "kind": "measured",
+        "basis": "litellm.spend.logs",
+        "model": "deepseek"
+      }
+    }
+  ],
+  "extrapolate": null,
+  "usageNotes": [
+    "tokens from paperclip.runs (confidence=0.9)",
+    "cost measured via litellm.spend.logs"
+  ]
+}

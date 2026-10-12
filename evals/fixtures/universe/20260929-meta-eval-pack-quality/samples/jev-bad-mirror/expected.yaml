@@ -1,0 +1,8 @@
+pass: false
+scores:
+  mirror_prod: false
+  headroom: true
+  low_ambiguity: true
+  adversarial_warning: true
+  holdout: true
+  executive_readable: true

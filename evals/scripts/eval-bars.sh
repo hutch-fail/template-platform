@@ -5,7 +5,10 @@
 #   - no raw secrets.GH_APP_* in workflows
 #   - org pre-commit (hutch-fail/pre-commit id: platform + evals-pre-commit + evals-pre-push)
 #   - sync-secrets GITHUB_OWNER hard-pin (no parent-shell inherit)
+#   - pack-quality ratchet
 # Append further org-wide CI/CD checks in run_universe_bars (universe growth rail).
+# OptMem is hub-only (goals/github.com/hutch-fail/evals/20261005-optmem-repo-memory),
+# not a universe always-on bar. assert_optmem_pr_diff still runs (safe no-op).
 #
 # Additionally runs **language** family bars when changed paths (or force)
 # indicate them:
@@ -29,9 +32,21 @@
 #   HERMES_EVAL_KIT / EVALS_KIT — evals hub (default: ./evals or parent of scripts/)
 #   HERMES_EVAL_SCAN_ROOT — product root to scan (default: cwd)
 #   HERMES_EVAL_FORCE_FAMILIES — comma list to add families even with no paths
+#   HERMES_EVAL_CHANGED_PATHS — exported from path argv (PR file list for pack-quality)
+#   HERMES_EVAL_DUMP_CHANGED_PATHS=1 — print those paths and exit (unit probe)
+#   HERMES_EVAL_LLM_JUDGE_ALL=1 — Tier3 tree-scan despite no path list
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ $# -gt 0 ]]; then
+  HERMES_EVAL_CHANGED_PATHS="$(printf '%s\n' "$@")"
+  export HERMES_EVAL_CHANGED_PATHS
+fi
+if [[ "${HERMES_EVAL_DUMP_CHANGED_PATHS:-}" == "1" ]]; then
+  printf '%s\n' "${HERMES_EVAL_CHANGED_PATHS:-}"
+  exit 0
+fi
 
 resolve_kit() {
   local kit="${HERMES_EVAL_KIT:-${EVALS_KIT:-}}"
@@ -317,6 +332,12 @@ run_universe_bars() {
       rc=1
     fi
   done
+  local pr_diff="${kit}/tests/unit/assert_optmem_pr_diff.sh"
+  if [[ -x "${pr_diff}" ]]; then
+    if ! bash "${pr_diff}" --root "${scan_root}"; then
+      rc=1
+    fi
+  fi
   return "${rc}"
 }
 

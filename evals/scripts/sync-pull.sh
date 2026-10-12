@@ -134,7 +134,7 @@ if [[ -d "$DEST/fixtures/${own_rel}" ]]; then
 fi
 
 RSYNC_FLAGS=(-a --delete --exclude 'runs/' --exclude '.github/' --exclude '.git/' \
-  --exclude 'goals/github.com/' --exclude 'fixtures/github.com/')
+  --exclude '.optmem/' --exclude 'goals/github.com/' --exclude 'fixtures/github.com/')
 if [[ "$DRY_RUN" -eq 1 ]]; then
   RSYNC_FLAGS+=(--dry-run --itemize-changes)
 fi

@@ -1,0 +1,61 @@
+{
+  "arm": "A",
+  "path": "paperclip\u2192hermes\u2192cursor/auto",
+  "identifier": "DEF-101",
+  "issueId": "74375395-e847-43a1-8c00-e627c402f8f8",
+  "status": "done",
+  "reward": 1.0,
+  "elapsedSec": 540.3,
+  "versionPin": "paperclip 2026.1001.0; cursor-agent 2026.10.01-e373342; hermes 0.21.5; hermes-cursor-provider v0.1.0",
+  "capturedAt": "2026-10-08T22:13:22Z",
+  "workspace": "/home/ubuntu/github.com/hutch-fail/evals/harbor/workspaces/paperclip-matching-brackets-20261008-211323-hermes-cursor-auto",
+  "runDir": "/home/ubuntu/.hermes/paperclip-data/instances/default/data/run-logs/86361a8a-ef34-41c2-907c-4b6d7a0777ef/8a33e990-c9d7-4d00-948f-00beedfc3675/bf46665a-1355-41c5-b7e8-4518d1b089ae.ndjson",
+  "unittest_rc": 0,
+  "comments": [
+    {
+      "body": "success=1.0\n\nImplemented is_paired in matching_brackets.py (stack-based).\n\nAcceptance: python3 -m unittest tests.test_outputs\nResult: Ran 20 tests \u2014 OK"
+    },
+    {
+      "body": "## Workspace Ready\n\n- Strategy: `git_worktree`\n- Branch: `DEF-101-solve-matching-brackets-arm-a-hermes-cursor-auto`\n- CWD: `/home/ubuntu/github.com/hutch-fail/.paperclip/worktrees/DEF-101-solve-matching-brackets-arm-a-hermes-cursor-auto`"
+    }
+  ],
+  "errorsSample": [],
+  "usage": {
+    "input_tokens": 15608,
+    "output_tokens": 3235,
+    "cache_tokens": 2176
+  },
+  "costUsd": 0.013137,
+  "costKind": "extrapolated",
+  "costBasis": "cursor.ultra.flat",
+  "costModel": "cursor/auto",
+  "tokenSourceId": "harbor.result",
+  "usageSources": [
+    {
+      "source_id": "paperclip.runs",
+      "confidence": 0.1,
+      "raw_ref": "ctx.paperclip_runs",
+      "tokens": null,
+      "cost": null
+    },
+    {
+      "source_id": "harbor.result",
+      "confidence": 0.4,
+      "raw_ref": "/home/hutchic/github.com/hutch-fail/evals/harbor/jobs/matching-brackets-terminus-openai-free-medium/matching-brackets__ehkRtZp/result.json",
+      "tokens": {
+        "input_tokens": 15608,
+        "output_tokens": 3235,
+        "cache_tokens": 2176
+      },
+      "cost": null
+    }
+  ],
+  "extrapolate": {
+    "usd": 0.013137,
+    "basis": "cursor.ultra.flat"
+  },
+  "usageNotes": [
+    "tokens from harbor.result (confidence=0.4)",
+    "cost extrapolated via cursor.ultra.flat"
+  ]
+}

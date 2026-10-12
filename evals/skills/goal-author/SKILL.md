@@ -17,7 +17,10 @@ Prefer skill **build-eval** for the interview → samples → cheapest grader �
 executive overview → assert-red loop. Refuse a goal that is only frontmatter +
 empty tables. Lead with `# Executive overview` (see `templates/goal.md`).
 Preflight the universe pack-quality ratchet (`docs/meta-eval-quality.md`) when
-keys allow.
+keys allow — including **use-path** (kick-the-tires) and **live-path**
+(Host/portless claims → doctor/`test/smoke` wiring, not probe-script greps):
+do not ship behavior claims whose F2P only greps wiring. Prefer wrapping a
+named upstream (pin + checksum) over rewriting it (`docs/prior-art.md`).
 
 Do **not** implement the product change here — that is **goal-develop**.
 
@@ -117,6 +120,20 @@ Decision already excludes that plane.
 Live PR curls are outside harness judge. When they close an uncovered outcome,
 prefer a proof level that matches the claim (listen/HTML vs config/mode vs
 interactive) — see `PROCESS.md` “Live proof levels (soft).”
+
+**Launch path vs install PATH:** if User outcome claims an in-session guest GUI
+(openbox / Kasm DISPLAY / desktop.localhost launch), Success criteria and
+`check.sh` (plus any named `scripts/probe-*.sh`) must assert `menu.d` /
+`menu.xml` / openbox / `.desktop` **and** `DISPLAY` or `desktop/env`. Do not
+treat `command -v` or dpkg as that outcome. Vendor CLIs that also have a
+Desktop IDE need a `*-desktop` sibling pack with launch-path criteria, or
+Limitations must say CLI-only / Desktop IDE / openbox launch is out of scope
+(`PROCESS.md` “Launch path vs install path”).
+
+For web application UI outcomes, include the expected product navigation/link
+surface in Success criteria and `check.sh`, including the Meter link when it is
+part of the operator workflow. If launch/navigation is intentionally out of
+scope, say so in Limitations.
 
 ## Forbidden
 

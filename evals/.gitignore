@@ -12,6 +12,11 @@
 !.agents/skills/
 !.agents/skills/**
 
+# Local secrets (never commit). Keep .env.example tracked.
+.env
+.env.*
+!.env.example
+
 # Eval harness run artefacts (never commit)
 runs/
 **/__pycache__/

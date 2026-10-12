@@ -10,7 +10,10 @@ META_PYTHON ?= $(shell if [ -x meta/.venv/bin/python ]; then echo meta/.venv/bin
 
 .PHONY: help eval/parse eval/assert-red eval/run eval/verify eval/solve eval/ab eval/list eval/select eval/doctor-scope eval/doctor-attach eval/bars eval/report \
 	sync/list sync/harvest sync/pull sync/doctor sync/reset-main sync/redistribute sync/ship-land \
-	sync/ensure-org-submodules meta/validate meta/calibrate
+	sync/ensure-org-submodules meta/validate meta/calibrate meta/pack-judge-selftest \
+	optmem/doctor optmem/reconcile
+
+JEV_SAMPLES ?= fixtures/universe/20260929-meta-eval-pack-quality/samples
 
 help:
 	@printf '%s\n' \
@@ -35,7 +38,10 @@ help:
 		'make sync/ensure-org-submodules CONSUMERS_ROOT=…  # local parent + submodule pins' \
 		'make sync/doctor CONSUMERS_ROOT=…' \
 		'make meta/validate EVAL=meta/calibration/good-01.yaml [META_FLAGS=…]' \
-		'make meta/calibrate [META_FLAGS=…]'
+		'make meta/calibrate [META_FLAGS=…]  # hub-only criterion toys (not pack-quality CI)' \
+		'make meta/pack-judge-selftest  # Jev pack-quality labeled samples (TYPESAFE_API_KEY)' \
+		'make optmem/doctor    # source .env + store doctor + LLM probe (litellm-api)' \
+		'make optmem/reconcile # source .env + python3 optmem/repo-memo reconcile (CI twin)'
 
 eval/parse:
 	@bash harness/goal.sh parse "$(GOAL)"
@@ -108,3 +114,18 @@ meta/validate:
 
 meta/calibrate:
 	@$(META_PYTHON) meta/validate.py calibrate $(META_FLAGS)
+
+# Path-triggered in pack-quality CI when judge/samples change; use locally while calibrating.
+meta/pack-judge-selftest:
+	@$(META_PYTHON) harness/lib/jev_pack_quality_judge.py --selftest "$(JEV_SAMPLES)"
+
+# Load repo .env (same names as Actions secrets) then run CI-shaped OptMem commands.
+define OPTMEM_LOAD_ENV
+	if [ -f .env ]; then set -a && . ./.env && set +a; fi;
+endef
+
+optmem/doctor:
+	@$(OPTMEM_LOAD_ENV) OPTMEM_DOCTOR_LLM=1 python3 optmem/repo-memo doctor --llm
+
+optmem/reconcile:
+	@$(OPTMEM_LOAD_ENV) python3 optmem/repo-memo reconcile
