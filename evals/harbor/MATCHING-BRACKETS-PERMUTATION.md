@@ -1,6 +1,6 @@
 # Matching-brackets — single-permutation report (Harbor MVP)
 
-Research: [`../docs/research/20261007-coding-agent-eval-harbor-langfuse.md`](../docs/research/20261007-coding-agent-eval-harbor-langfuse.md)  
+Research: [`../docs/research/20261007-coding-agent-eval-harbor-langfuse.md`](../docs/research/20261007-coding-agent-eval-harbor-langfuse.md)
 Task: [`tasks/matching-brackets/`](tasks/matching-brackets/)
 
 ## Permutation A — oracle (verifier + timing proved)
@@ -43,8 +43,8 @@ Proves F2P-style red on the Exercism stub without weakening checks.
 
 ## Permutation C — live LLM via Cloudflare LiteLLM (measured)
 
-Hosted OpenAI-compatible API: `https://litellm-api.hutch.fail/v1`  
-(not `litellm.hutch.fail` Admin UI). Free alias on that proxy: `meter/colin/free-medium`.  
+Hosted OpenAI-compatible API: `https://litellm-api.hutch.fail/v1`
+(not `litellm.hutch.fail` Admin UI). Free alias on that proxy: `meter/colin/free-medium`.
 Harbor’s LiteLLM client needs the OpenAI provider prefix: `-m openai/meter/colin/free-medium`.
 
 | Field | Value |

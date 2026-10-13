@@ -62,3 +62,7 @@ proposal pack; then apply AGENTS/skill/template in a follow-up reviewable PR.
 # Manifest
 
 `evals/runs/20261009-kick-the-tires-structure-only/` (assert-red + verify).
+
+# Jev re-grade (2026-10-12)
+
+`jev_pack_quality_judge.py` → pass (all six axes) after aligning User outcome + entrypoint effects with Success criteria.

@@ -198,7 +198,8 @@ missing_kinds() {
 
 # A result must say which checks were run by hand and which automated check now
 # covers each (PROCESS.md "Manual verification becomes a test"). Only results
-# added/changed in the diff are checked, so existing results are grandfathered.
+# *added* in the diff are gated; modified grandfathered results (sync refresh)
+# are not rewritten and must not be re-eval'd.
 result_has_manual_section() {
   awk '
     { l = tolower($0) }
@@ -210,13 +211,21 @@ result_has_manual_section() {
 }
 
 result_content_problems() {
-  local mode="$1" path
-  shift
+  local mode="$1" diff_range="${2:-}" path added=""
+  shift 2
   [[ "${mode}" == "ci" ]] || return 0
+  if [[ -n "${diff_range}" ]]; then
+    added="$(git -C "${ROOT}" diff --name-only --diff-filter=A "${diff_range}" 2>/dev/null || true)"
+  fi
   for path in "$@"; do
     [[ -n "${path}" ]] || continue
     is_result "${path}" || continue
     [[ -f "${ROOT}/${path}" ]] || continue
+    # With --range: only newly added results. With --paths-file (empty range):
+    # every listed result path is treated as in-scope (self-tests / explicit lists).
+    if [[ -n "${diff_range}" ]]; then
+      printf '%s\n' "${added}" | grep -qxF "${path}" || continue
+    fi
     result_has_manual_section "${ROOT}/${path}" || printf '%s\n' "${path}"
   done
 }
@@ -230,7 +239,7 @@ report_missing() {
     return 0
   fi
   missing="$(missing_kinds "${mode}" "$@")"
-  bad_results="$(result_content_problems "${mode}" "$@")"
+  bad_results="$(result_content_problems "${mode}" "${diff_range}" "$@")"
   [[ -n "${missing}" || -n "${bad_results}" ]] || return 0
   if [[ -n "${missing}" ]]; then
     printf '%s\n' '✗ pull request changes code without an eval pack' >&2
@@ -400,6 +409,45 @@ PATHS
   printf '# Proof\nok\n' >"${rdir}/20260919-x-result.md"
   if ! EVALS_PACK_ROOT="${pack}" bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" --mode pre-commit --paths-file "${paths_ok}" >/dev/null 2>&1; then
     printf '✗ self-test: pre-commit mode must not require the result section\n' >&2
+    fail=1
+  fi
+  # Grandfather: modifying an existing result without Manual verification must
+  # pass under --range; only *added* results are gated.
+  local gf_repo="${tmp}/gf-repo"
+  mkdir -p "${gf_repo}/evals/goals/github.com/o/r" \
+    "${gf_repo}/evals/fixtures/github.com/o/r/20260919-old" \
+    "${gf_repo}/scripts"
+  git -C "${gf_repo}" init -q
+  git -C "${gf_repo}" config user.email 'eval@example.com'
+  git -C "${gf_repo}" config user.name 'eval'
+  printf '#!/bin/sh\necho ok\n' >"${gf_repo}/scripts/instance.sh"
+  printf '#!/bin/sh\nexit 0\n' >"${gf_repo}/evals/fixtures/github.com/o/r/20260919-old/check.sh"
+  printf '# goal\n' >"${gf_repo}/evals/goals/github.com/o/r/20260919-old.md"
+  printf '# Proof\nold\n' >"${gf_repo}/evals/goals/github.com/o/r/20260919-old-result.md"
+  git -C "${gf_repo}" add .
+  git -C "${gf_repo}" commit -q -m 'base with grandfathered result'
+  # Sync-style refresh: touch fixture, goal, and result (result still lacks Manual verification).
+  printf '#!/bin/sh\nexit 0\n# sync\n' >"${gf_repo}/evals/fixtures/github.com/o/r/20260919-old/check.sh"
+  printf '# goal\n# sync\n' >"${gf_repo}/evals/goals/github.com/o/r/20260919-old.md"
+  printf '# Proof\nold\n# refreshed by sync\n' >"${gf_repo}/evals/goals/github.com/o/r/20260919-old-result.md"
+  printf '# touch\n' >>"${gf_repo}/scripts/instance.sh"
+  git -C "${gf_repo}" add -A
+  git -C "${gf_repo}" commit -q -m 'sync refreshes grandfathered pack'
+  if ! EVALS_PACK_ROOT="${gf_repo}" bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --range 'HEAD~1...HEAD' >/dev/null 2>&1; then
+    printf '✗ self-test: modified grandfathered result without Manual verification must pass\n' >&2
+    fail=1
+  fi
+  mkdir -p "${gf_repo}/evals/fixtures/github.com/o/r/20260919-new"
+  printf '#!/bin/sh\nexit 0\n' >"${gf_repo}/evals/fixtures/github.com/o/r/20260919-new/check.sh"
+  printf '# goal\n' >"${gf_repo}/evals/goals/github.com/o/r/20260919-new.md"
+  printf '# Proof\nnew\n' >"${gf_repo}/evals/goals/github.com/o/r/20260919-new-result.md"
+  printf '# touch2\n' >>"${gf_repo}/scripts/instance.sh"
+  git -C "${gf_repo}" add -A
+  git -C "${gf_repo}" commit -q -m 'adds new result without Manual verification'
+  if EVALS_PACK_ROOT="${gf_repo}" bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --range 'HEAD~1...HEAD' >/dev/null 2>&1; then
+    printf '✗ self-test: newly added result without Manual verification must fail\n' >&2
     fail=1
   fi
   local lock_only="${tmp}/lock-only"
