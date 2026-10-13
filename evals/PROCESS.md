@@ -145,6 +145,13 @@ loop). Cold-start-only packs must say so under Limitations (`single-shot only`
 behavior claims (`docs/meta-eval-quality.md`); selftest samples are
 `samples/good-use` and `samples/bad-use`.
 
+For **lib / prefer-path** claims (pure logic, cost resolution, adapters), a
+hermetic **unit-test exercise** counts as kick-the-tires: the fixture runs the
+CI-backed runner (`node --test`, `pytest`, `npm test`, `bash tests/unit/…`,
+etc.) and asserts an effect. User outcome may still state the production *why*
+when Limitations own live proof as hold-out. That is **not** a substitute for
+ensure/heal reconverge on operator entrypoint claims.
+
 ### Live path vs probe-script path
 
 `grep -Fq 'curl'` inside `scripts/probe-….sh` proves **wiring**, not that

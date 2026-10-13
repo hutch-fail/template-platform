@@ -103,7 +103,18 @@ EXERCISE_CUE_RE = re.compile(
     r"\bmake\s+(?:up|ensure|bootstrap)\b|"
     r"\bharbor\s+run\b|"
     r"kick[-_]?the[-_]?tires|#\s*use-path|"
-    r"paperclip_invent_binds_install\s*\(|paperclip_skills_mirror_install"
+    r"paperclip_invent_binds_install\s*\(|paperclip_skills_mirror_install|"
+    # CI-backed unit/integration test runners (lib/prefer-path hermetic exercise).
+    # Not added to USE_PATH_ENTRY_RE — does not satisfy ensure/heal re-entry.
+    r"\bnode\s+--test\b|"
+    r"\bnpm\s+test\b|"
+    r"\bnpx\s+[^\n]*\b(?:vitest|jest|mocha)\b|"
+    r"\bpython3?\s+-m\s+(?:pytest|unittest)\b|"
+    r"\bpytest\b|"
+    r"\bgo\s+test\b|"
+    r"\bcargo\s+test\b|"
+    r"\bbash\s+tests/unit/|"
+    r"(?:^|\s)\./tests/"
     r")"
 )
 REENTRY_CUE_RE = re.compile(
@@ -719,6 +730,23 @@ def selftest(samples_root: Path) -> int:
         )
     else:
         print(f"pack_quality_selftest_bad_live_ok n_errors={len(bad_live_errs)}")
+    # Unit-test runners count as hermetic exercise (not ensure/heal entrypoints).
+    unit_blob = "node --test tests/rate-card.test.js\nnpm test\npython3 -m pytest"
+    if not EXERCISE_CUE_RE.search(unit_blob):
+        rc = 1
+        print(
+            "error: selftest EXERCISE_CUE_RE must match CI unit-test runners "
+            "(node --test / npm test / pytest)",
+            file=sys.stderr,
+        )
+    elif USE_PATH_ENTRY_RE.search(unit_blob):
+        rc = 1
+        print(
+            "error: selftest unit-test runners must not match USE_PATH_ENTRY_RE",
+            file=sys.stderr,
+        )
+    else:
+        print("pack_quality_selftest_unit_test_exercise_ok")
     return rc
 
 

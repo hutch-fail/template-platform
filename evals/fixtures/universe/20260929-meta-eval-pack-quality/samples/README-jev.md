@@ -16,6 +16,12 @@ Labeled thin goals for the Tier-2 TypeSafe (`jev_pack_quality_judge.py`) selftes
 `mirror_prod` · `headroom` · `low_ambiguity` · `adversarial_warning` ·
 `holdout` · `executive_readable`
 
+**`mirror_prod` (hermetic + hold-out):** User outcome may state production
+*why* when Success criteria hermetically exercise the claim (entrypoint
+effect **or** unit/integration test runner + assert) and Limitations own the
+live/production gap as hold-out. Fail when production/operator User outcome
+meets wiring greps only without owning that gap (`jev-bad-mirror`).
+
 Meta-check wording stays abstract. Sample product fiction must not leak into
 Noul instructions.
 

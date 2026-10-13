@@ -30,11 +30,14 @@ REQUIRED_AXES = (
 
 HOW_TO_PASS: dict[str, tuple[str, str]] = {
     "mirror_prod": (
-        "User outcome / production behavior must match what Success criteria "
-        "actually grade — including kick-the-tires use, not only wiring greps.",
-        "Rewrite Success criteria so each meaningful User outcome is "
-        "observable (call the entrypoint / assert an effect), or move the "
-        "extra claim to Limitations (wiring-only / use-path out of scope).",
+        "Hermetic Success criteria must exercise the claim (entrypoint effect "
+        "or unit/integration test runner + assert), not only wiring greps. "
+        "User outcome may state production why when Limitations own the "
+        "live/production gap as hold-out or out of scope.",
+        "Add a hermetic exercise (call the entrypoint, run the pack's unit "
+        "tests and assert an effect) and/or own the live gap in Limitations "
+        "(hold-out / live out of scope). Do not rewrite User outcome to only "
+        "describe running check.sh.",
     ),
     "headroom": (
         "The pack must be neither already saturated nor impossible-only.",
@@ -74,12 +77,16 @@ THRESHOLD = 0.5
 # Abstract Noul criteria — never mention sample domains or HTTP status codes.
 _AXIS_NOULS: dict[str, tuple[str, str, str]] = {
     "mirror_prod": (
-        "Does this goal pack grade the stated User outcome / production "
-        "behavior by exercising it (entrypoint, effect, kick-the-tires), "
-        "not only by grepping that wiring exists?",
-        "Success criteria observe real use or an effect matching User outcome.",
-        "Success criteria only check wiring/greps while User outcome claims "
-        "live behavior, without Limitations owning that gap.",
+        "Do Success criteria hermetically exercise the core claim "
+        "(entrypoint effect or running the pack's unit/integration test "
+        "runner and asserting an effect), not only grepping wiring? If User "
+        "outcome states live or production behavior, do Limitations own that "
+        "gap as hold-out or out of scope?",
+        "Criteria exercise the claim hermetically (entrypoint or unit-test "
+        "runner + effect). Live/production User outcome is allowed when "
+        "Limitations own that gap.",
+        "Criteria only grep wiring while User outcome claims live or "
+        "operator behavior, and Limitations do not own that gap.",
     ),
     "headroom": (
         "Is headroom plausible — neither already saturated nor "

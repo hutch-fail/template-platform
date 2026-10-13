@@ -60,6 +60,14 @@ Tier3). Six holistic axes match Tier3 vocabulary: `mirror_prod`, `headroom`,
 `low_ambiguity`, `adversarial_warning`, `holdout`, `executive_readable`.
 Code owns `score >= 0.5` per Noul and overall AND. Fail closed on FAIL/ERROR.
 
+**`mirror_prod` (hermetic + hold-out):** Success criteria must hermetically
+exercise the claim (entrypoint effect **or** unit/integration test runner +
+assert), not only wiring greps. User outcome may state production *why* when
+Limitations own the live/production gap as hold-out. Do not force authors to
+rewrite User outcome to only describe running `check.sh`. Fail when
+production/operator User outcome meets grep-only criteria without owning that
+gap.
+
 When unset:
 
 - Skip if `PRE_COMMIT=1`, `HERMES_EVAL_SKIP_JEV=1`, or fixture marker present
