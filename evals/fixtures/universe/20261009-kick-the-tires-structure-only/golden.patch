@@ -3,7 +3,7 @@
 @@ -1,8 +1,21 @@
 -# Process evals (fixture baseline — intentionally incomplete)
 +# Process evals (fixture baseline — after golden)
- 
+
 -Harness commands and outcome-vs-check notes live here in the real hub.
 -This baseline omits the kick-the-tires / structure-only disposition procedure
 -so F2P stays red until golden.patch lands it.
@@ -23,9 +23,9 @@
 +
 +If an agent writes IaC or examples but never runs, converges, or surfaces them,
 +disposition must be `blocked` or `in_review` — **not** `done`.
- 
+
  ## Manual verification becomes a test
- 
+
 diff -ruN baseline/scripts/grade-structure-only-disposition.sh /tmp/paperclip-run-def-115-c710596e-318-m6VSVQ/golden-fix/baseline/scripts/grade-structure-only-disposition.sh
 --- a/baseline/scripts/grade-structure-only-disposition.sh
 +++ b/baseline/scripts/grade-structure-only-disposition.sh

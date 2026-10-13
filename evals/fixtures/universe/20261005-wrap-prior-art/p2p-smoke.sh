@@ -36,4 +36,14 @@ if [[ -f "${root}/PROCESS.md" ]] && ! grep -Fq 'wrap-prior-art.mdc' "${root}/PRO
   miss "PROCESS.md must mention wrap-prior-art.mdc"
 fi
 [[ -f "${root}/docs/prior-art.md" ]] || miss "missing docs/prior-art.md"
-exit "${fail}"
+if [[ "${fail}" -ne 0 ]]; then
+  exit "${fail}"
+fi
+# Observable entrypoint effect (same contract as check.sh marker).
+marker="${here}/.wrap-prior-art-p2p-ok"
+printf 'wrap-prior-art p2p ok\n' >"${marker}"
+[[ -f "${marker}" ]] || {
+  printf 'error: failed to write p2p marker\n' >&2
+  exit 1
+}
+exit 0

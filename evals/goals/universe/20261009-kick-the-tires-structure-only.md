@@ -8,6 +8,7 @@ f2p_check: check.sh
 p2p_check: p2p-smoke.sh
 golden_patch: golden.patch
 solver: none
+pack_quality: required
 ---
 
 # Executive overview
@@ -30,8 +31,10 @@ PROCESS section or while the baseline grader always allows `done`.
 
 # User outcome
 
-Operators and SDETs get a reusable regression: writing IaC/examples without
-run/converge/durable surface forces `blocked`/`in_review`, not `done`.
+Operators running this pack’s `check.sh` / `p2p-smoke.sh` exercise the hub
+disposition grader: structure-only closeouts get `blocked`/`in_review`, not
+`done`, and PROCESS documents the kick-the-tires gate. The grader entrypoint
+is the observable effect — not that every company AGENTS.md already calls it.
 
 # Scope
 
@@ -44,10 +47,10 @@ run/converge/durable surface forces `blocked`/`in_review`, not `done`.
 
 | Criterion | What we look at |
 | --- | --- |
-| Baseline red | Unpatched fixture lacks PROCESS kick-the-tires section; broken grader allows done |
-| Patched baseline green | After golden, PROCESS has the section; grader rejects structure-only-done |
+| Baseline red | Unpatched fixture: `check.sh` fails (PROCESS section missing; baseline grader allows `done`) |
+| Patched baseline green | After golden, `check.sh` runs grader — rejects structure-only-done |
 | Live PROCESS | Hub `PROCESS.md` documents observable final state + fail-closed + blocked/in_review |
-| Live grader | Hub script rejects `done`, allows `blocked` for the same structure-only case |
+| Live grader | `p2p-smoke.sh` runs hub `grade-structure-only-disposition.sh` — rejects `done`, allows `blocked` |
 
 # Dataset
 

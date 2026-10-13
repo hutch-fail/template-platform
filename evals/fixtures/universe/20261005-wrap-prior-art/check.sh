@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # F2P: wrap-prior-art rule must exist and host adapters must list it.
+# On success, writes an observable marker (entrypoint effect for pack-quality).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rule="${here}/baseline/.cursor/rules/wrap-prior-art.mdc"
 adapter="${here}/baseline/install-host-adapters.sh"
+marker="${here}/.wrap-prior-art-ok"
+
+rm -f "${marker}"
 
 fail=0
 miss() { printf '%s\n' "$*" >&2; fail=1; }
@@ -26,4 +30,13 @@ if ! grep -Fq 'wrap-prior-art.mdc' "${adapter}"; then
   miss "install-host-adapters.sh must list wrap-prior-art.mdc"
 fi
 
-exit "${fail}"
+if [[ "${fail}" -ne 0 ]]; then
+  exit "${fail}"
+fi
+
+printf 'wrap-prior-art ok\n' >"${marker}"
+[[ -f "${marker}" ]] || {
+  printf 'error: failed to write entrypoint marker\n' >&2
+  exit 1
+}
+exit 0

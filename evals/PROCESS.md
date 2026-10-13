@@ -268,9 +268,9 @@ exist. Do not leave it as prose in a PR description or result file.
    fails before the fix and passes after, and the PR says so.
 
 Enforced in CI: `assert_pr_has_eval_pack.sh --mode ci` rejects any result file
-added or changed in the PR that lacks a non-empty `# Manual verification`
-section (use `None — <why>` when nothing was run by hand). Existing results
-are not rewritten.
+*added* in the PR that lacks a non-empty `# Manual verification` section (use
+`None — <why>` when nothing was run by hand). Existing results are not
+rewritten; modifying them (for example hub sync) does not re-apply the section gate.
 
 ## Procedure homes
 

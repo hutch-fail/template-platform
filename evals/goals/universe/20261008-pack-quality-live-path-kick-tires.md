@@ -27,10 +27,9 @@ migrate every legacy product pack or curl a personal Incus guest in CI.
 
 # User outcome
 
-Authors writing portless/UI L0 goals assert doctor/`test/smoke`/`make up`
-invoke the probe instead of inventing one-off live eval packs. Reviewers stop
-greenlighting “probe mentions curl” as “Host works.” Operator Done still
-requires running that product smoke and recording live-proof.
+Operators running pack-quality `check.sh` (selftest) see live-path lint accept
+`good-live` and reject `bad-live` (probe-script-only Host URL claims). The
+lint entrypoint is what grades the claim — not a personal Incus curl in CI.
 
 # Scope
 
@@ -44,8 +43,8 @@ requires running that product smoke and recording live-proof.
 
 | Criterion | What we look at |
 | --- | --- |
-| Selftest | `good-live` passes; `bad-live` fails with `live-path` |
-| Lint wired | `pack_quality_lint.py` calls `_live_path_errors` |
+| Selftest | `check.sh --selftest` / lint selftest: `good-live` passes; `bad-live` fails with `live-path` |
+| Lint wired | `pack_quality_lint.py` invokes `_live_path_errors` on Host URL claim shapes |
 | Docs/skills | PROCESS “Live path vs probe-script path”; templates + goal-author |
 | Bars unit | `test_eval_bars.sh` requires good-live/bad-live samples |
 | Nothing else breaks | Existing good/bad/desktop/use selftest still green |
@@ -74,13 +73,14 @@ Set before the run.
 
 # Limitations
 
-Does not prove every product pack already wires smoke. Sync/subtree consumers
-pick up the hub lint on next redistribute. Real Incus HTTP remains a product
-`make test/smoke` hold-out for CI. Hold-out for this ratchet is the bad-live
-wiring-only sample.
+This pack grades the **hub live-path lint entrypoint** (selftest samples), not
+that every author already rewrote product packs or that a guest dashboard
+returns HTTP 2xx. Sync/subtree consumers pick up the hub lint on next
+redistribute. Real Incus HTTP remains a product `make test/smoke` hold-out.
+Hold-out for this ratchet is the bad-live wiring-only sample.
 
 Use-path / ensure reconverge is out of scope — this pack ratchets Host URL
-live-path only (sibling use-path pack owns kick-the-tires for ensure/seed).
+live-path lint only (sibling use-path pack owns kick-the-tires for ensure/seed).
 
 A careful author can still escape with an honest Limitations line
 (`live-path out of scope` / `hermetic wiring only`) — then they must not PASS

@@ -50,3 +50,7 @@ Merge with the OptMem pack. Consumers pick up the rule on sync/pull + adapters.
 # Manifest
 
 `runs/20261005-wrap-prior-art/`
+
+# Jev re-grade (2026-10-12)
+
+`jev_pack_quality_judge.py` → pass (all six axes) after aligning User outcome + entrypoint effects with Success criteria.

@@ -32,7 +32,7 @@ harbor run -p harbor/tasks/matching-brackets \
 harbor view harbor/jobs
 ```
 
-Use `litellm-api.hutch.fail` (API), not `litellm.hutch.fail` (Admin UI / Access).  
+Use `litellm-api.hutch.fail` (API), not `litellm.hutch.fail` (Admin UI / Access).
 LiteLLM client needs the `openai/` provider prefix for custom proxy model ids.
 
 Permutation notes: [`MATCHING-BRACKETS-PERMUTATION.md`](MATCHING-BRACKETS-PERMUTATION.md).
