@@ -31,8 +31,8 @@ REQUIRED_AXES = (
 
 HOW_TO_PASS: dict[str, tuple[str, str]] = {
     "mirror_prod": (
-        "User outcome / production behavior must match what Success criteria actually grade — including kick-the-tires use, not only wiring greps.",
-        "Rewrite Success criteria so each meaningful User outcome is observable (call the entrypoint / assert an effect), or move the extra claim to Limitations (wiring-only / use-path out of scope).",
+        "Hermetic Success criteria must exercise the claim (entrypoint effect or unit/integration test runner + assert), not only wiring greps. User outcome may state production why when Limitations own the live/production gap as hold-out or out of scope.",
+        "Add a hermetic exercise (call the entrypoint, run the pack's unit tests and assert an effect) and/or own the live gap in Limitations (hold-out / live out of scope). Do not rewrite User outcome to only describe running check.sh.",
     ),
     "headroom": (
         "The pack must be neither already saturated nor impossible-only.",
@@ -63,8 +63,11 @@ Return ONLY JSON:
  "notes": "short"}
 
 Rubric (each must be true for pass=true):
-1. mirror_prod: Tasks mirror stated production / User outcome (operator use /
-   kick-the-tires graded by exercise, not only grep wiring)
+1. mirror_prod: Hermetic criteria exercise the claim (entrypoint or unit-test
+   runner + effect), not only grep wiring. Production-flavored User outcome
+   is OK when Limitations own the live gap as hold-out / out of scope. FAIL
+   when User outcome claims live/operator behavior with grep-only criteria
+   and Limitations do not own that gap.
 2. headroom: Headroom plausible (not saturated / not impossible-only)
 3. low_ambiguity: Two experts would agree; grader checks are stated
 4. adversarial_warning: The pack states a SPECIFIC reason a careful human or an

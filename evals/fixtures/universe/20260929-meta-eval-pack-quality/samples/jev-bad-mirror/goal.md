@@ -57,5 +57,6 @@ Set before the run.
 
 # Limitations
 
-Does not prove a live guest. Hold-out is the paired jev-good sample. This pack
-is the failing wiring-only contrast (no kick-the-tires exercise).
+Hold-out is the paired jev-good sample. This pack intentionally treats wiring
+greps as proof of operator reconcile and does **not** own that gap (no
+hermetic unit-test exercise, no live hold-out for the reconcile claim).
