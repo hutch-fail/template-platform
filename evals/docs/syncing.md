@@ -86,7 +86,9 @@ canonical clones under `CONSUMERS_ROOT/<name>` or `dot-github` for `.github`).
    when present)
 
 **Never** copies other products’ `github.com/**` packs (that broke
-`eval/select` on earlier redistributes). Always omits `runs/` and `.github/`,
+`eval/select` on earlier redistributes). Always omits `runs/` and the hub
+**root** `/.github/` (rsync-anchored — nested fixture samples under
+`fixtures/**/.github/` must sync, or bash-budget / gha selftests go red),
 and restores `scope.yaml` after sync.
 
 `--attachment ephemeral|kit|full` (default `full`) installs persist gitignore
@@ -174,6 +176,11 @@ Canonical runbook for an org-wide kit redistribute after a hub merge:
    failure mode, or Make target, amend this file (and the
    `evals-org-redistribute` skill when behavior changed) in a follow-up hub PR
    **before** claiming the redistribute done.
+
+Known failure mode: if consumer kits miss
+`fixtures/**/samples/**/.github/workflows/*.yml` after redistribute, the
+rsync `.github/` exclude was unanchored — fix is hub-root `/.github/` only
+(see “What sync/pull redistributes”).
 
 ## Why not subtree-only?
 

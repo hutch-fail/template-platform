@@ -1,0 +1,10 @@
+name: sample
+on: pull_request
+jobs:
+  determine-runner:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: runner-determination-${{ github.workflow }}-${{ github.job }}
+      cancel-in-progress: false
+    steps:
+      - run: echo hi
