@@ -7,6 +7,23 @@ HUB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONSUMERS_ROOT="${CONSUMERS_ROOT:-$HOME/github.com/hutch-fail}"
 ORG=hutch-fail
 FAIL=0
+LIST_EXCLUDE_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --consumers-root) CONSUMERS_ROOT="${2:?}"; shift 2 ;;
+    --exclude)
+      LIST_EXCLUDE_ARGS+=(--exclude "${2:?}")
+      shift 2
+      ;;
+    -h|--help)
+      printf '%s\n' "Usage: $0 [--consumers-root DIR] [--exclude NAME]…" \
+        "Env: SYNC_EXCLUDE=name1,name2"
+      exit 0
+      ;;
+    *) printf 'error: unknown arg %s\n' "$1" >&2; exit 2 ;;
+  esac
+done
 
 LIST_SCRIPT="$HUB_ROOT/scripts/sync-list-repos.sh"
 [[ -x "$LIST_SCRIPT" ]] || { echo "missing $LIST_SCRIPT" >&2; exit 1; }
@@ -58,7 +75,9 @@ while IFS= read -r row; do
     fi
   fi
   printf 'OK    %-24s kit scope=%s\n' "$name" "$(grep -E '^repo:' "$path/evals/scope.yaml" | head -1 | awk '{print $2}')"
-done < <(CONSUMERS_ROOT="$CONSUMERS_ROOT" "$LIST_SCRIPT" --format json --consumers-root "$CONSUMERS_ROOT" --org "$ORG" | jq -c '.[]')
+done < <(CONSUMERS_ROOT="$CONSUMERS_ROOT" SYNC_EXCLUDE="${SYNC_EXCLUDE:-}" \
+  "$LIST_SCRIPT" --format json --consumers-root "$CONSUMERS_ROOT" --org "$ORG" \
+  "${LIST_EXCLUDE_ARGS[@]}" | jq -c '.[]')
 
 if [[ "$FAIL" -ne 0 ]]; then
   printf 'sync/doctor: FAIL\n' >&2

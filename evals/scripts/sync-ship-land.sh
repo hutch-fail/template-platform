@@ -2,7 +2,9 @@
 # Orchestrate org redistribute: reset → redistribute (draft PRs) → land checklist.
 # sync-redistribute commits/pushes and opens draft PRs; agent marks ready-for-review
 # in batches, then land-pr-until-green (soft-require) → squash-merge.
-# Usage: sync-ship-land.sh [--consumers-root DIR] [--hub DIR] [--skip-reset] [--skip-redistribute]
+# Usage: sync-ship-land.sh [--consumers-root DIR] [--hub DIR] [--exclude NAME]…
+#          [--skip-reset] [--skip-redistribute]
+# Env: SYNC_EXCLUDE=name1,name2
 set -euo pipefail
 
 HUB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -11,16 +13,23 @@ HUB="${HUB:-$HUB_ROOT}"
 SKIP_RESET=0
 SKIP_REDIST=0
 ORG=hutch-fail
+LIST_EXCLUDE_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --consumers-root) CONSUMERS_ROOT="${2:?}"; shift 2 ;;
     --hub) HUB="${2:?}"; shift 2 ;;
+    --exclude)
+      LIST_EXCLUDE_ARGS+=(--exclude "${2:?}")
+      shift 2
+      ;;
     --skip-reset) SKIP_RESET=1; shift ;;
     --skip-redistribute) SKIP_REDIST=1; shift ;;
     -h|--help)
       cat <<'EOF'
-Usage: sync-ship-land.sh [--consumers-root DIR] [--hub DIR] [--skip-reset] [--skip-redistribute]
+Usage: sync-ship-land.sh [--consumers-root DIR] [--hub DIR] [--exclude NAME]…
+         [--skip-reset] [--skip-redistribute]
+Env: SYNC_EXCLUDE=name1,name2
 Runs sync-reset-to-main then sync-redistribute (unless skipped). Redistribute
 opens draft PRs. Then prints per-repo paths for ready-for-review (batch) →
 land-pr-until-green (RFV) → squash-merge → checkout origin/main → sync/doctor.
@@ -47,14 +56,16 @@ HUB="$(cd "$HUB" && pwd)"
 
 if [[ "$SKIP_RESET" -eq 0 ]]; then
   log "==> sync-reset-to-main"
-  CONSUMERS_ROOT="$CONSUMERS_ROOT" bash "$RESET" --consumers-root "$CONSUMERS_ROOT"
+  CONSUMERS_ROOT="$CONSUMERS_ROOT" SYNC_EXCLUDE="${SYNC_EXCLUDE:-}" \
+    bash "$RESET" --consumers-root "$CONSUMERS_ROOT" "${LIST_EXCLUDE_ARGS[@]}"
 else
   log "==> skip reset"
 fi
 
 if [[ "$SKIP_REDIST" -eq 0 ]]; then
   log "==> sync-redistribute (hub=$HUB)"
-  CONSUMERS_ROOT="$CONSUMERS_ROOT" bash "$REDIST" --consumers-root "$CONSUMERS_ROOT" --hub "$HUB"
+  CONSUMERS_ROOT="$CONSUMERS_ROOT" SYNC_EXCLUDE="${SYNC_EXCLUDE:-}" \
+    bash "$REDIST" --consumers-root "$CONSUMERS_ROOT" --hub "$HUB" "${LIST_EXCLUDE_ARGS[@]}"
 else
   log "==> skip redistribute"
 fi
@@ -74,9 +85,11 @@ while IFS= read -r row; do
   br="$(git -C "$path" branch --show-current 2>/dev/null || echo '?')"
   dirty="$(git -C "$path" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
   printf 'REPO  %-28s path=%s branch=%s dirty_files=%s\n' "$name" "$path" "$br" "$dirty"
-done < <(CONSUMERS_ROOT="$CONSUMERS_ROOT" "$LIST" --format json --consumers-root "$CONSUMERS_ROOT" --org "$ORG" | jq -c '.[]')
+done < <(CONSUMERS_ROOT="$CONSUMERS_ROOT" SYNC_EXCLUDE="${SYNC_EXCLUDE:-}" \
+  "$LIST" --format json --consumers-root "$CONSUMERS_ROOT" --org "$ORG" \
+  "${LIST_EXCLUDE_ARGS[@]}" | jq -c '.[]')
 
 log ""
-log "After all merges: CONSUMERS_ROOT=$CONSUMERS_ROOT make -C $HUB_ROOT sync/doctor"
+log "After all merges: CONSUMERS_ROOT=$CONSUMERS_ROOT SYNC_EXCLUDE=\${SYNC_EXCLUDE:-} make -C $HUB_ROOT sync/doctor"
 log "sync-ship-land: mechanical reset/redistribute (draft PRs) done; agent must ready+land each REPO line"
 exit 0

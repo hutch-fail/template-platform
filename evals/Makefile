@@ -3,6 +3,8 @@ GOAL ?= fixture-token-echo
 CONSUMERS_ROOT ?= $(HOME)/github.com/hutch-fail
 HUB ?= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SYNC_FORMAT ?= tsv
+# Comma/space-separated repo names to omit from include=true (e.g. machine-layers).
+SYNC_EXCLUDE ?=
 
 EVAL ?= meta/calibration/good-01.yaml
 META_FLAGS ?=
@@ -29,14 +31,14 @@ help:
 		'make eval/doctor-attach' \
 		'make eval/bars   # universe always + language families (manifest + paths)' \
 		'make eval/report GOAL=…' \
-		'make sync/list [CONSUMERS_ROOT=…] [SYNC_FORMAT=tsv|json]' \
+		'make sync/list [CONSUMERS_ROOT=…] [SYNC_FORMAT=tsv|json] [SYNC_EXCLUDE=…]' \
 		'make sync/harvest CONSUMERS_ROOT=…' \
 		'make sync/pull HUB=…   # run from consumer root via: make -C evals sync/pull HUB=…' \
-		'make sync/reset-main CONSUMERS_ROOT=…' \
-		'make sync/redistribute CONSUMERS_ROOT=… HUB=…' \
-		'make sync/ship-land CONSUMERS_ROOT=… HUB=…' \
+		'make sync/reset-main CONSUMERS_ROOT=… [SYNC_EXCLUDE=…]' \
+		'make sync/redistribute CONSUMERS_ROOT=… HUB=… [SYNC_EXCLUDE=…]' \
+		'make sync/ship-land CONSUMERS_ROOT=… HUB=… [SYNC_EXCLUDE=…]' \
 		'make sync/ensure-org-submodules CONSUMERS_ROOT=…  # local parent + submodule pins' \
-		'make sync/doctor CONSUMERS_ROOT=…' \
+		'make sync/doctor CONSUMERS_ROOT=… [SYNC_EXCLUDE=…]' \
 		'make meta/validate EVAL=meta/calibration/good-01.yaml [META_FLAGS=…]' \
 		'make meta/calibrate [META_FLAGS=…]  # hub-only criterion toys (not pack-quality CI)' \
 		'make meta/pack-judge-selftest  # Jev pack-quality labeled samples (TYPESAFE_API_KEY)' \
@@ -82,7 +84,8 @@ eval/report:
 	@bash harness/goal.sh report "$(GOAL)"
 
 sync/list:
-	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" bash scripts/sync-list-repos.sh --format "$(SYNC_FORMAT)" --consumers-root "$(CONSUMERS_ROOT)"
+	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" SYNC_EXCLUDE="$(SYNC_EXCLUDE)" \
+		bash scripts/sync-list-repos.sh --format "$(SYNC_FORMAT)" --consumers-root "$(CONSUMERS_ROOT)"
 
 sync/harvest:
 	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" bash scripts/sync-harvest.sh --consumers-root "$(CONSUMERS_ROOT)"
@@ -93,16 +96,19 @@ sync/pull:
 	@bash scripts/sync-pull.sh --hub "$(HUB)"
 
 sync/doctor:
-	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" bash scripts/sync-doctor.sh
+	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" SYNC_EXCLUDE="$(SYNC_EXCLUDE)" bash scripts/sync-doctor.sh
 
 sync/reset-main:
-	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" bash scripts/sync-reset-to-main.sh --consumers-root "$(CONSUMERS_ROOT)"
+	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" SYNC_EXCLUDE="$(SYNC_EXCLUDE)" \
+		bash scripts/sync-reset-to-main.sh --consumers-root "$(CONSUMERS_ROOT)"
 
 sync/redistribute:
-	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" bash scripts/sync-redistribute.sh --consumers-root "$(CONSUMERS_ROOT)" --hub "$(HUB)"
+	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" SYNC_EXCLUDE="$(SYNC_EXCLUDE)" \
+		bash scripts/sync-redistribute.sh --consumers-root "$(CONSUMERS_ROOT)" --hub "$(HUB)"
 
 sync/ship-land:
-	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" bash scripts/sync-ship-land.sh --consumers-root "$(CONSUMERS_ROOT)" --hub "$(HUB)"
+	@CONSUMERS_ROOT="$(CONSUMERS_ROOT)" SYNC_EXCLUDE="$(SYNC_EXCLUDE)" \
+		bash scripts/sync-ship-land.sh --consumers-root "$(CONSUMERS_ROOT)" --hub "$(HUB)"
 
 # Local-only parent at CONSUMERS_ROOT: register include=true (+ hub evals) as submodules.
 # Does not publish a GitHub remote for the parent. After sync/reset-main, re-run to refresh pins.

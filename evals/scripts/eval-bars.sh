@@ -322,7 +322,8 @@ run_universe_bars() {
     "${kit}/fixtures/universe/20260929-pre-commit-platform/check.sh" \
     "${kit}/fixtures/universe/20261002-local-eval-gates/check.sh" \
     "${kit}/fixtures/universe/20261004-sync-secrets-pin-github-owner/check.sh" \
-    "${kit}/fixtures/universe/20260929-meta-eval-pack-quality/check.sh"; do
+    "${kit}/fixtures/universe/20260929-meta-eval-pack-quality/check.sh" \
+    "${kit}/fixtures/universe/20261014-bash-budget/check.sh"; do
     if [[ ! -x "${check}" ]]; then
       printf 'error: missing universe check at %s\n' "${check}" >&2
       rc=1
@@ -431,7 +432,8 @@ run_gha_bars() {
   export HERMES_EVAL_REPO_ROOT="${scan_root}"
 
   for check in \
-    "${kit}/fixtures/language/gha/20261001-unique-runner-determination/check.sh"; do
+    "${kit}/fixtures/language/gha/20261001-unique-runner-determination/check.sh" \
+    "${kit}/fixtures/universe/20261014-bash-budget/check.sh"; do
     if [[ ! -x "${check}" ]]; then
       printf 'error: missing gha bar check at %s\n' "${check}" >&2
       rc=1

@@ -6,7 +6,8 @@
 #
 # Redistributes: kit + goals|fixtures/universe/ + goals|fixtures/language/
 # + this repo's own github.com/<org>/<repo>/ leaf (preserve then overlay from hub).
-# Does NOT copy other products' github.com packs. Omits runs/ and .github/.
+# Does NOT copy other products' github.com packs. Omits runs/ and hub-root
+# /.github/ only (nested fixture .github/ samples must sync).
 # Preserves evals/scope.yaml.
 # --attachment ephemeral|kit|full installs persist gitignore (default full).
 set -euo pipefail
@@ -32,8 +33,9 @@ Usage: sync-pull.sh [--hub DIR] [--init-scope] [--attachment ephemeral|kit|full]
 Run from the consumer repo root. Syncs hub → ./evals/:
   kit + universe/language (+ fixtures) + own github.com/<org>/<repo>/ leaf only.
 Preserves existing evals/scope.yaml and consumer-owned own leaf, then overlays
-that leaf from hub when present. Omits runs/, .github/, and other products'
-github.com packs. --attachment installs the persist gitignore (default: full).
+that leaf from hub when present. Omits runs/, hub-root /.github/, and other
+products' github.com packs. --attachment installs the persist gitignore
+(default: full).
 EOF
       exit 0
       ;;
@@ -133,7 +135,10 @@ if [[ -d "$DEST/fixtures/${own_rel}" ]]; then
   log "preserved consumer own fixtures leaf ${own_rel}"
 fi
 
-RSYNC_FLAGS=(-a --delete --exclude 'runs/' --exclude '.github/' --exclude '.git/' \
+# Anchor /.github/ and /.git/ to the hub transfer root only. A bare '.github/'
+# exclude also drops nested fixture samples (e.g. bash-budget bad-yaml/.github/
+# workflows) and breaks universe selftests after redistribute.
+RSYNC_FLAGS=(-a --delete --exclude 'runs/' --exclude '/.github/' --exclude '/.git/' \
   --exclude '.optmem/' --exclude 'goals/github.com/' --exclude 'fixtures/github.com/')
 if [[ "$DRY_RUN" -eq 1 ]]; then
   RSYNC_FLAGS+=(--dry-run --itemize-changes)

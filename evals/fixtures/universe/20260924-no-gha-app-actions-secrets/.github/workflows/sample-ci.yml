@@ -1,0 +1,18 @@
+# Baseline: raw GitHub App secrets (must fail the universe bar).
+name: sample ci
+on:
+  workflow_call:
+    secrets:
+      GH_APP_ID:
+        required: true
+      GH_APP_PRIVATE_KEY:
+        required: true
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint GitHub App installation token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
