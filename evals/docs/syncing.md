@@ -140,12 +140,40 @@ make sync/ship-land CONSUMERS_ROOT="$HOME/github.com/hutch-fail"   # reset+redis
 make sync/doctor CONSUMERS_ROOT="$HOME/github.com/hutch-fail"
 ```
 
+Omit repos for one run with `SYNC_EXCLUDE` (comma/space-separated names) or
+repeated `--exclude NAME` on the scripts:
+
+```bash
+make sync/list SYNC_EXCLUDE=machine-layers
+make sync/redistribute SYNC_EXCLUDE=machine-layers HUB=… CONSUMERS_ROOT=…
+make sync/doctor SYNC_EXCLUDE=machine-layers
+```
+
+Excluded rows show `include=false` and `skip_reason=exclude`.
+
 Skill: `evals-org-redistribute`. Fail closed on dirty trees. Fail closed when
 a consumer lacks root `.pre-commit-config.yaml` (universe
 `20260929-pre-commit-platform` — backfill org pre-commit before redistribute)
 or lacks `pre-push-evals.sh` (`20261002-local-eval-gates`).
 Draft PRs skip eval-ci/pre-commit until ready-for-review. Kit-only syncs rely
 on consumer `evals/**` paths-ignore for pre-commit (do not use `[skip ci]`).
+
+## Operator SOP
+
+Canonical runbook for an org-wide kit redistribute after a hub merge:
+
+1. Confirm the hub change is on **`origin/main`**.
+2. `make sync/list CONSUMERS_ROOT=…` — spot-check `include` / classes.
+3. Set excludes if needed: `SYNC_EXCLUDE=machine-layers` (or `--exclude`).
+4. `make sync/reset-main` (refuse dirty) + `make sync/ensure-org-submodules` when umbrella pins drift.
+5. `make sync/redistribute HUB=…` — draft PRs per included consumer.
+6. Spot-check diffs (kit + universe/language + own leaf only) → batch `gh pr ready`.
+7. Per PR: **land-pr-until-green** → squash-merge → clone back to `origin/main`.
+8. `make sync/doctor` (same `SYNC_EXCLUDE` if used).
+9. **Update the SOP** — if this run discovered a missing flag, skip rule,
+   failure mode, or Make target, amend this file (and the
+   `evals-org-redistribute` skill when behavior changed) in a follow-up hub PR
+   **before** claiming the redistribute done.
 
 ## Why not subtree-only?
 
@@ -168,7 +196,7 @@ paths, and fights product-owned `scope.yaml`. `sync/pull` uses selective
 
 | Target | Role |
 | --- | --- |
-| `make sync/list` | TSV/JSON inventory |
+| `make sync/list` | TSV/JSON inventory (`SYNC_EXCLUDE` / `--exclude`) |
 | `make sync/harvest CONSUMERS_ROOT=…` | Consumer → hub |
 | `make sync/pull HUB=…` | Hub → this consumer `evals/` (kit + universe/language + own leaf) |
 | `make sync/reset-main` | Included clones → `origin/main` (refuse dirty) |
@@ -176,3 +204,5 @@ paths, and fights product-owned `scope.yaml`. `sync/pull` uses selective
 | `make sync/redistribute` | Branch + sync-pull + adapters + draft PR |
 | `make sync/ship-land` | Reset + redistribute + ready/land checklist |
 | `make sync/doctor` | Org inventory vs hub tip |
+
+`SYNC_EXCLUDE` applies to list / reset-main / redistribute / ship-land / doctor.

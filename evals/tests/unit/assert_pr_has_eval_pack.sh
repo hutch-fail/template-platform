@@ -230,17 +230,91 @@ result_content_problems() {
   done
 }
 
+# UI/UX path detect for PR-description screenshot gate (broader than eval-bars
+# is_ui_path — includes SPA *.tsx / styles). Bare *.ts and src/** alone are not UI.
+path_is_ui_ux() {
+  local p="$1" base="${1##*/}"
+  case "${p}" in
+    design/*|*/design/*) return 0 ;;
+    docs/design-system/*|*/docs/design-system/*) return 0 ;;
+    docs/north-star/*|*/docs/north-star/*) return 0 ;;
+    evals/ui/*|*/evals/ui/*) return 0 ;;
+    scripts/ui-*|*/scripts/ui-*) return 0 ;;
+    */ui-process/*|*ui-process/*) return 0 ;;
+    */ui-jev/*|*ui-jev/*) return 0 ;;
+    */ui-visual/*|*ui-visual/*) return 0 ;;
+    */ui-semantic/*|*ui-semantic/*) return 0 ;;
+    */__tests__/*|*/tests/*) return 1 ;;
+  esac
+  case "${base}" in
+    *.test.tsx|*.test.jsx|*.spec.tsx|*.spec.jsx) return 1 ;;
+    *.tsx|*.jsx) return 0 ;;
+    *.css|*.scss|*.module.css) return 0 ;;
+  esac
+  return 1
+}
+
+paths_touch_ui_ux() {
+  local path
+  for path in "$@"; do
+    [[ -n "${path}" ]] || continue
+    path_is_ui_ux "${path}" && return 0
+  done
+  return 1
+}
+
+# PR body must show before+after screenshot evidence, or an explicit n/a waiver.
+# Reads EVALS_PR_BODY (set by CI from github.event.pull_request.body).
+pr_body_has_ui_screenshots() {
+  local body="${EVALS_PR_BODY:-}"
+  [[ -n "${body}" ]] || return 1
+  # Waiver: "UI before/after: n/a" plus a short reason on the same line.
+  if printf '%s\n' "${body}" | grep -qiE \
+    'UI[[:space:]]+before[[:space:]]*/[[:space:]]*after:[[:space:]]*n/a[[:space:]]+.+'
+  then
+    return 0
+  fi
+  local lower
+  lower="$(printf '%s\n' "${body}" | tr '[:upper:]' '[:lower:]')"
+  printf '%s\n' "${lower}" | grep -qE '(^|[[:space:]#*-])before([[:space:]:]|$)' \
+    || return 1
+  printf '%s\n' "${lower}" | grep -qE '(^|[[:space:]#*-])after([[:space:]:]|$)' \
+    || return 1
+  if printf '%s\n' "${body}" | grep -qE \
+    '!\[|<img[[:space:]]|user-attachments|media\.githubusercontent\.com'
+  then
+    return 0
+  fi
+  return 1
+}
+
+# CI-only: when the diff touches UI/UX and EVALS_PR_BODY is set, require
+# before/after screenshots (or n/a waiver) in the PR description.
+ui_screenshot_gate_problem() {
+  local mode="$1"
+  shift
+  [[ "${mode}" == "ci" ]] || return 0
+  # Unset body → skip (pre-commit / local assert without PR context).
+  [[ -n "${EVALS_PR_BODY+x}" ]] || return 0
+  paths_touch_ui_ux "$@" || return 0
+  if pr_body_has_ui_screenshots; then
+    return 0
+  fi
+  printf '%s\n' 'ui-before-after'
+}
+
 report_missing() {
   local mode="$1" diff_range="${2:-}"
   shift 2
-  local missing bad_results kind path
+  local missing bad_results ui_shot kind path
   if paths_are_dependency_bump_only "${diff_range}" "$@"; then
     printf '%s\n' 'eval pack gate: dependency-bump-only diff — skip' >&2
     return 0
   fi
   missing="$(missing_kinds "${mode}" "$@")"
   bad_results="$(result_content_problems "${mode}" "${diff_range}" "$@")"
-  [[ -n "${missing}" || -n "${bad_results}" ]] || return 0
+  ui_shot="$(ui_screenshot_gate_problem "${mode}" "$@")"
+  [[ -n "${missing}" || -n "${bad_results}" || -n "${ui_shot}" ]] || return 0
   if [[ -n "${missing}" ]]; then
     printf '%s\n' '✗ pull request changes code without an eval pack' >&2
     while IFS= read -r kind; do
@@ -254,6 +328,11 @@ report_missing() {
       [[ -n "${path}" ]] || continue
       printf '  result: %s\n' "${path}" >&2
     done <<<"${bad_results}"
+  fi
+  if [[ -n "${ui_shot}" ]]; then
+    printf '%s\n' \
+      '✗ UI/UX-touching PR lacks before/after screenshots in the description (PROCESS.md: UI/UX PR screenshots)' \
+      '  add before + after images (or clips), or a line: UI before/after: n/a — <reason>' >&2
   fi
   return 1
 }
@@ -498,6 +577,90 @@ WF
   git -C "${gha_repo}" commit -q -am 'logic change'
   if EVALS_PACK_ROOT="${gha_repo}" bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" --mode ci --range 'HEAD~1...HEAD' >/dev/null 2>&1; then
     printf '✗ self-test: workflow non-pin diff must still require a pack\n' >&2
+    fail=1
+  fi
+  # UI/UX before/after screenshot gate (EVALS_PR_BODY + UI path).
+  unset EVALS_PR_BODY || true
+  local ui_pack="${tmp}/ui-pack" ui_rdir="${tmp}/ui-pack/evals/goals/github.com/o/r" ui_paths="${tmp}/ui-paths"
+  mkdir -p "${ui_rdir}" \
+    "${ui_pack}/evals/fixtures/github.com/o/r/20261015-ui" \
+    "${ui_pack}/console/web"
+  printf '#!/bin/sh\nexit 0\n' >"${ui_pack}/evals/fixtures/github.com/o/r/20261015-ui/check.sh"
+  printf '# goal\n' >"${ui_rdir}/20261015-ui.md"
+  printf '# Proof\nok\n\n## Manual verification\n\nNone — hermetic.\n' \
+    >"${ui_rdir}/20261015-ui-result.md"
+  printf 'export default function Home() { return null }\n' \
+    >"${ui_pack}/console/web/home.tsx"
+  cat >"${ui_paths}" <<'UIPATHS'
+console/web/home.tsx
+evals/fixtures/github.com/o/r/20261015-ui/check.sh
+evals/goals/github.com/o/r/20261015-ui.md
+evals/goals/github.com/o/r/20261015-ui-result.md
+UIPATHS
+  # Unset body → skip screenshot gate (local / pre-commit without PR context).
+  if ! EVALS_PACK_ROOT="${ui_pack}" bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --paths-file "${ui_paths}" >/dev/null 2>&1; then
+    printf '✗ self-test: UI path without EVALS_PR_BODY must skip screenshot gate\n' >&2
+    fail=1
+  fi
+  # Empty / missing evidence → fail.
+  if EVALS_PACK_ROOT="${ui_pack}" EVALS_PR_BODY='## Summary\nno shots' \
+    bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --paths-file "${ui_paths}" >/dev/null 2>&1; then
+    printf '✗ self-test: UI path with body lacking before/after images must fail\n' >&2
+    fail=1
+  fi
+  # before+after words but no image → fail.
+  if EVALS_PACK_ROOT="${ui_pack}" EVALS_PR_BODY=$'## Before\nold\n## After\nnew\n' \
+    bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --paths-file "${ui_paths}" >/dev/null 2>&1; then
+    printf '✗ self-test: before/after without image embed must fail\n' >&2
+    fail=1
+  fi
+  # Good body with markdown images.
+  if ! EVALS_PACK_ROOT="${ui_pack}" EVALS_PR_BODY=$'## Before\n![before](https://media.githubusercontent.com/x.png)\n## After\n![after](https://user-attachments.githubusercontent.com/y.png)\n' \
+    bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --paths-file "${ui_paths}" >/dev/null 2>&1; then
+    printf '✗ self-test: UI path with before/after images must pass\n' >&2
+    fail=1
+  fi
+  # Explicit n/a waiver.
+  if ! EVALS_PACK_ROOT="${ui_pack}" EVALS_PR_BODY=$'UI before/after: n/a — copy-only, no visual change\n' \
+    bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --paths-file "${ui_paths}" >/dev/null 2>&1; then
+    printf '✗ self-test: UI before/after n/a waiver must pass\n' >&2
+    fail=1
+  fi
+  # Bare n/a without reason → fail.
+  if EVALS_PACK_ROOT="${ui_pack}" EVALS_PR_BODY=$'UI before/after: n/a\n' \
+    bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --paths-file "${ui_paths}" >/dev/null 2>&1; then
+    printf '✗ self-test: bare UI before/after n/a without reason must fail\n' >&2
+    fail=1
+  fi
+  # Non-UI path with empty body → no screenshot gate.
+  local non_ui="${tmp}/non-ui-paths"
+  cat >"${non_ui}" <<'NONUI'
+scripts/instance/create.sh
+evals/fixtures/github.com/o/r/20261015-ui/check.sh
+evals/goals/github.com/o/r/20261015-ui.md
+evals/goals/github.com/o/r/20261015-ui-result.md
+NONUI
+  mkdir -p "${ui_pack}/scripts/instance"
+  printf '#!/bin/sh\n' >"${ui_pack}/scripts/instance/create.sh"
+  if ! EVALS_PACK_ROOT="${ui_pack}" EVALS_PR_BODY='' \
+    bash "${SCRIPT_DIR}/assert_pr_has_eval_pack.sh" \
+    --mode ci --paths-file "${non_ui}" >/dev/null 2>&1; then
+    printf '✗ self-test: non-UI path must not require screenshots\n' >&2
+    fail=1
+  fi
+  # Test *.tsx excluded.
+  if path_is_ui_ux 'console/web/home.test.tsx'; then
+    printf '✗ self-test: *.test.tsx must not count as UI/UX\n' >&2
+    fail=1
+  fi
+  if ! path_is_ui_ux 'console/web/home.tsx'; then
+    printf '✗ self-test: *.tsx must count as UI/UX\n' >&2
     fail=1
   fi
   if [[ "${fail}" -ne 0 ]]; then

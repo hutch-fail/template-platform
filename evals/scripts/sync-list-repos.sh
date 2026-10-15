@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # List hutch-fail org repos with evals class + local path.
 # Usage: sync-list-repos.sh [--format json|tsv] [--consumers-root DIR] [--org ORG]
+#          [--exclude NAME]…   (also SYNC_EXCLUDE=name1,name2 or space-separated)
 set -euo pipefail
 
 FORMAT=tsv
@@ -8,14 +9,34 @@ ORG=hutch-fail
 CONSUMERS_ROOT="${CONSUMERS_ROOT:-$HOME/github.com/hutch-fail}"
 HUB_NAME=evals
 SKIP_ALWAYS=()
+EXCLUDE_NAMES=()
+
+# Seed excludes from SYNC_EXCLUDE (comma and/or whitespace separated).
+_seed_excludes_from_env() {
+  local raw="${SYNC_EXCLUDE:-}" tok
+  [[ -n "${raw}" ]] || return 0
+  raw="${raw//,/ }"
+  # shellcheck disable=SC2086
+  for tok in ${raw}; do
+    [[ -n "${tok}" ]] || continue
+    EXCLUDE_NAMES+=("${tok}")
+  done
+}
+_seed_excludes_from_env
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --format) FORMAT="${2:?}"; shift 2 ;;
     --consumers-root) CONSUMERS_ROOT="${2:?}"; shift 2 ;;
     --org) ORG="${2:?}"; shift 2 ;;
+    --exclude)
+      EXCLUDE_NAMES+=("${2:?}")
+      shift 2
+      ;;
     -h|--help)
-      printf '%s\n' "Usage: $0 [--format json|tsv] [--consumers-root DIR] [--org ORG]"
+      printf '%s\n' \
+        "Usage: $0 [--format json|tsv] [--consumers-root DIR] [--org ORG] [--exclude NAME]…" \
+        "Env: SYNC_EXCLUDE=name1,name2 (or space-separated) → include=false, skip_reason=exclude"
       exit 0
       ;;
     *) printf 'error: unknown arg %s\n' "$1" >&2; exit 2 ;;
@@ -80,6 +101,15 @@ is_skipped_name() {
   return 1
 }
 
+is_excluded_name() {
+  local name="$1"
+  local s
+  for s in "${EXCLUDE_NAMES[@]}"; do
+    [[ "$name" == "$s" ]] && return 0
+  done
+  return 1
+}
+
 mapfile -t REPOS < <(gh repo list "$ORG" --limit 200 --json name,isArchived \
   | jq -r '.[] | [.name, (if .isArchived then "true" else "false" end)] | @tsv')
 
@@ -99,6 +129,10 @@ for line in "${REPOS[@]}"; do
   elif [[ "$name" == "$HUB_NAME" ]]; then
     class=hub
     skip_reason=hub
+    include=false
+  elif is_excluded_name "$name"; then
+    class=skipped
+    skip_reason=exclude
     include=false
   elif is_skipped_name "$name"; then
     class=skipped

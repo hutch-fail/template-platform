@@ -27,7 +27,9 @@ may combine them.
 
 Process skills: **build-eval** (design packs), **hillclimb** (optimize with
 train/test discipline). Universe pack-quality ratchet:
-[`docs/meta-eval-quality.md`](docs/meta-eval-quality.md).
+[`docs/meta-eval-quality.md`](docs/meta-eval-quality.md). Bash budget for GHA
+YAML + eval `check.sh` (≤~12 consecutive content lines; YAML ≤35% inline bash):
+[`docs/evals.md`](docs/evals.md) § Bash budget (`20261014-bash-budget`).
 
 If the claim is that an agent used a tool, the check starts that agent in the
 runtime under test. A config file, a throwaway projector run, or a library
@@ -278,6 +280,21 @@ Enforced in CI: `assert_pr_has_eval_pack.sh --mode ci` rejects any result file
 *added* in the PR that lacks a non-empty `# Manual verification` section (use
 `None — <why>` when nothing was run by hand). Existing results are not
 rewritten; modifying them (for example hub sync) does not re-apply the section gate.
+
+### UI/UX PR screenshots
+
+When a pull request touches UI/UX surfaces (non-test `*.tsx` / `*.jsx`,
+stylesheets, `design/**`, design-system / north-star docs, or `ui-*` process
+fixtures), the **PR description** must include before and after screenshots or
+clips (markdown/`<img>` / GitHub attachment URLs) so reviewers can see the
+visual delta. Escape hatch on the same PR body:
+
+`UI before/after: n/a — <short reason>`
+
+(for copy-only, non-visual refactors, etc.). Enforced in CI by
+`assert_pr_has_eval_pack.sh` when `EVALS_PR_BODY` is set (eval-ci / eval-pack
+gate); unset locally skips the screenshot gate. A listening port or hermetic
+unit green is not a substitute for showing the UI change.
 
 ## Procedure homes
 

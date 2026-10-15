@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Branch each included consumer, sync-pull from hub tip, commit, push, open a DRAFT PR.
-# Usage: sync-redistribute.sh [--consumers-root DIR] [--hub DIR] [--branch NAME] [--dry-run]
+# Usage: sync-redistribute.sh [--consumers-root DIR] [--hub DIR] [--branch NAME]
+#          [--exclude NAME]… [--dry-run]
+# Env: SYNC_EXCLUDE=name1,name2 (passed through to sync-list-repos).
 set -euo pipefail
 
 HUB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -9,16 +11,23 @@ HUB="${HUB:-$HUB_ROOT}"
 DRY_RUN=0
 ORG=hutch-fail
 BRANCH="chore/sync-evals-$(date +%Y%m%d)"
+LIST_EXCLUDE_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --consumers-root) CONSUMERS_ROOT="${2:?}"; shift 2 ;;
     --hub) HUB="${2:?}"; shift 2 ;;
     --branch) BRANCH="${2:?}"; shift 2 ;;
+    --exclude)
+      LIST_EXCLUDE_ARGS+=(--exclude "${2:?}")
+      shift 2
+      ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help)
       cat <<'EOF'
-Usage: sync-redistribute.sh [--consumers-root DIR] [--hub DIR] [--branch NAME] [--dry-run]
+Usage: sync-redistribute.sh [--consumers-root DIR] [--hub DIR] [--branch NAME]
+         [--exclude NAME]… [--dry-run]
+Env: SYNC_EXCLUDE=name1,name2
 For each include=true kit/missing clone: refuse if dirty; checkout/create BRANCH;
 run sync-pull.sh --hub HUB (--init-scope if no scope.yaml); install-host-adapters.sh;
 commit + push when the tree changed; open a draft PR (gh pr create --draft).
@@ -228,7 +237,9 @@ EOF
   open_draft_pr "$path" "$name" || { log "FAIL  $name draft PR"; FAIL=1; continue; }
   log "OK    $name on $BRANCH (sync-pull + adapters + draft PR)"
   OK=$((OK + 1))
-done < <(CONSUMERS_ROOT="$CONSUMERS_ROOT" "$LIST_SCRIPT" --format json --consumers-root "$CONSUMERS_ROOT" --org "$ORG" | jq -c '.[]')
+done < <(CONSUMERS_ROOT="$CONSUMERS_ROOT" SYNC_EXCLUDE="${SYNC_EXCLUDE:-}" \
+  "$LIST_SCRIPT" --format json --consumers-root "$CONSUMERS_ROOT" --org "$ORG" \
+  "${LIST_EXCLUDE_ARGS[@]}" | jq -c '.[]')
 
 log "sync-redistribute: ok=$OK fail=$FAIL draft_prs=$DRAFT_PRS branch=$BRANCH hub=$HUB"
 [[ "$FAIL" -eq 0 ]] || exit 1

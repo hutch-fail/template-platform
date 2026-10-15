@@ -64,7 +64,11 @@ changed path outside `evals/` is a **dependency bump only**: known lockfiles
 (`poetry.lock`, `package-lock.json`, …) or pin-only edits in
 `.github/workflows/*` and `.github/actions/**` (`uses: …@`, `hub_ref:`, `rev:`).
 Workflow logic changes still need an eval pack; pin bumps may still run
-`language/gha` bars when those paths change.
+`language/gha` bars when those paths change. When the diff touches **UI/UX**
+paths (non-test `*.tsx`/`*.jsx`, styles, design-system cues), CI also requires
+before/after screenshots in the PR description (or
+`UI before/after: n/a — <reason>`) via `EVALS_PR_BODY` — see PROCESS.md
+“UI/UX PR screenshots”.
 
 ## Host consumer (subtree / mount at `evals/`)
 
@@ -144,12 +148,12 @@ Behavior today:
 
 | Trigger | Family | Bars run |
 | --- | --- | --- |
-| (always) | `universe` | No raw `secrets.GH_APP_ID` / `GH_APP_PRIVATE_KEY` (`20260924-no-gha-app-actions-secrets`); org pre-commit platform + evals-pre-commit (`20260929-pre-commit-platform`); local schema parse + pre-push pack (`20261002-local-eval-gates`); `sync-secrets` must hard-pin `GITHUB_OWNER` (`20261004-sync-secrets-pin-github-owner`); pack-quality ratchet Tier1–3 (`20260929-meta-eval-pack-quality` — see [`meta-eval-quality.md`](meta-eval-quality.md)) |
+| (always) | `universe` | No raw `secrets.GH_APP_ID` / `GH_APP_PRIVATE_KEY` (`20260924-no-gha-app-actions-secrets`); org pre-commit platform + evals-pre-commit (`20260929-pre-commit-platform`); local schema parse + pre-push pack (`20261002-local-eval-gates`); `sync-secrets` must hard-pin `GITHUB_OWNER` (`20261004-sync-secrets-pin-github-owner`); pack-quality ratchet Tier1–3 (`20260929-meta-eval-pack-quality` — see [`meta-eval-quality.md`](meta-eval-quality.md)); bash budget for GHA YAML + eval `check.sh` (`20261014-bash-budget` — see § Bash budget) |
 | `*.tf` / `*.tf.json` | `opentofu` | Remote-backend language bar (`20260924-remote-backend-locking`) |
 | `*.ts` / `*.tsx` / `tsconfig.json` or `languages: typescript` | `typescript` | Run `npm run typecheck` / `npm test` when those scripts exist (skip if absent) |
 | `design/**`, `docs/design-system/**`, `docs/north-star/**`, `evals/ui/**`, `scripts/ui-*`, own-leaf `ui-process` / `ui-jev` / `ui-visual` / `ui-semantic`, or `languages: ui` | `ui` | Scope-manifest + process-entrypoint; execute `ui:docs` / `ui:lint` / `ui:process` when present; optional `ui:jev` when script + `TYPESAFE_API_KEY` exist |
 | `ansible/**`, `*/ansible/**`, `ansible.cfg`, `*/ansible.cfg` | `ansible` | Single-converge playbook bar (`20260929-ansible-single-converge`) |
-| `.github/workflows/**`, `.github/actions/**`, or `languages: gha` (alias `ci`) | `gha` | CI/CD / GitHub Actions hygiene (seed: unique `runner-determination` concurrency — `20261001-unique-runner-determination`) |
+| `.github/workflows/**`, `.github/actions/**`, or `languages: gha` (alias `ci`) | `gha` | CI/CD / GitHub Actions hygiene (unique `runner-determination` concurrency — `20261001-unique-runner-determination`; bash budget also wired here — `20261014-bash-budget`) |
 
 Language ids for `evals/scope.yaml` / select: `opentofu`, `typescript`,
 `python`, `ui`, `ansible`, `gha` — see [`scoping.md`](scoping.md) registry
@@ -186,6 +190,22 @@ Universe bars always run against `HERMES_EVAL_SCAN_ROOT` (default cwd).
 
 Rule A for remote-backend: fail `backend "local"` and missing backend; pass any
 non-local backend type (including partial `backend "s3" {}`).
+
+### Bash budget (GHA YAML + eval shell)
+
+Universe (+ `gha` family) bar `20261014-bash-budget` /
+`harness/lib/bash_budget_lint.py`:
+
+| Surface | Rule (defaults) |
+| --- | --- |
+| `.github/workflows\|actions/**/*.yml` | Each `run: \|` / `run: >` block ≤ **12** consecutive content lines; inline bash body ≤ **35%** of file lines |
+| Eval `check.sh` / `p2p-smoke.sh` | ≤ **12** consecutive non-comment content lines |
+
+Override: `HERMES_EVAL_BASH_MAX_CONSECUTIVE`, `HERMES_EVAL_BASH_MAX_YAML_PCT`.
+Enforcement is **PR-scoped** (`HERMES_EVAL_CHANGED_PATHS` from eval-bars argv);
+without a path list the bar selftests samples then skips (no historic tree
+fail). On fail, stderr names the file and says to extract a script / Python
+helper. Prefer thin workflow wrappers and thin `check.sh` that `exec` Python.
 
 When these scripts run from a product repo, they detect the hub at `evals/`
 automatically (see script headers).

@@ -46,10 +46,13 @@ make sync/reset-main CONSUMERS_ROOT=…
 make sync/redistribute CONSUMERS_ROOT=… HUB=…   # after hub is on main
 make sync/ship-land CONSUMERS_ROOT=… HUB=…     # reset+redistribute + checklist
 make sync/doctor CONSUMERS_ROOT=…
+# Omit repos for one run:
+make sync/redistribute SYNC_EXCLUDE=machine-layers CONSUMERS_ROOT=… HUB=…
 ```
 
 Scripts: `scripts/sync-reset-to-main.sh`, `sync-redistribute.sh`,
-`sync-ship-land.sh`, `sync-pull.sh`, `sync-doctor.sh`.
+`sync-ship-land.sh`, `sync-pull.sh`, `sync-doctor.sh`, `sync-list-repos.sh`
+(`--exclude` / `SYNC_EXCLUDE`).
 
 `sync-redistribute` commits, pushes, and opens **draft** PRs. Drafts skip
 eval-ci and pre-commit until marked ready.
@@ -75,7 +78,11 @@ For each `include=true` path from `sync/list` with a draft PR:
 4. Squash-merge when land-ready
 5. `git fetch && git checkout main && git reset --hard origin/main`
 
-Then `make sync/doctor`.
+Then `make sync/doctor` (same `SYNC_EXCLUDE` if used).
+
+**Update the SOP** — if this run discovered a missing flag, skip rule, failure
+mode, or Make target, amend `docs/syncing.md` (Operator SOP) and this skill
+when behavior changed, in a follow-up hub PR before claiming redistribute done.
 
 Soft-require personal skills via `~/.claude/skills/land-pr-until-green`
 (resolve-script.sh pattern). Commit/push/PR create is handled by
